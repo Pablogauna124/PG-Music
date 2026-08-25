@@ -115,6 +115,20 @@ private fun ColorScheme.withNeutralLightSurfaces(): ColorScheme =
         inverseOnSurface = Color(0xFFF1F1F1),
     )
 
+private fun ColorScheme.withPgBrandColors(isDark: Boolean): ColorScheme =
+    copy(
+        primary = if (isDark) Color(0xFFFF2638) else Color(0xFFD50018),
+        onPrimary = Color.White,
+        primaryContainer = if (isDark) Color(0xFF62000B) else Color(0xFFFFDADD),
+        onPrimaryContainer = if (isDark) Color(0xFFFFDADD) else Color(0xFF410005),
+        secondary = if (isDark) Color(0xFFB388FF) else Color(0xFF7042C1),
+        onSecondary = if (isDark) Color(0xFF2D005F) else Color.White,
+        secondaryContainer = if (isDark) Color(0xFF44177A) else Color(0xFFEBDDFF),
+        onSecondaryContainer = if (isDark) Color(0xFFEBDDFF) else Color(0xFF270057),
+        tertiary = if (isDark) Color(0xFFD95CFF) else Color(0xFF8B25AC),
+        surfaceTint = if (isDark) Color(0xFFFF2638) else Color(0xFFD50018),
+    )
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AppTheme(
@@ -148,7 +162,14 @@ fun AppTheme(
                 isDark = isDark,
                 isAmoled = isDark,
                 style = PaletteStyle.TonalSpot,
-                modifyColorScheme = { cs -> if (isDark) cs else cs.withNeutralLightSurfaces() },
+                modifyColorScheme = { cs ->
+                    val neutral = if (isDark) cs else cs.withNeutralLightSurfaces()
+                    if (themeColorSource == DataStoreManager.THEME_COLOR_DEFAULT) {
+                        neutral.withPgBrandColors(isDark)
+                    } else {
+                        neutral
+                    }
+                },
             )
     // Immersive screens stay dark even at light theme (see [ForceDarkContent]). Resolve their scheme
     // once here instead of letting every such subtree build a palette of its own.
