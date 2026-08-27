@@ -37,7 +37,7 @@ import com.maxrave.domain.mediaservice.handler.ToastType
 import com.maxrave.logger.Logger
 import com.maxrave.media3.di.setServiceActivitySession
 import com.maxrave.simpmusic.di.viewModelModule
-import com.maxrave.simpmusic.license.IntroActivity
+import com.maxrave.simpmusic.license.LicenseActivity
 import com.maxrave.simpmusic.license.LicenseManager
 import com.maxrave.simpmusic.service.rss.RssFeedNotifyWork
 import com.maxrave.simpmusic.service.test.notification.NotifyWork
@@ -109,7 +109,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!LicenseManager.hasValidatedSession()) {
-            startActivity(IntroActivity.createIntent(this, intent))
+            startActivity(LicenseActivity.createIntent(this, intent))
             finish()
             return
         }
