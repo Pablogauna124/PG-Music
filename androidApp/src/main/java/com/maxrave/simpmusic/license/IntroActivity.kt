@@ -36,10 +36,10 @@ class IntroActivity : AppCompatActivity() {
 
         root.addView(
             ImageView(this).apply {
-                setImageResource(R.mipmap.ic_launcher)
+                setImageResource(R.mipmap.ic_launcher_foreground)
                 scaleType = ImageView.ScaleType.FIT_CENTER
             },
-            FrameLayout.LayoutParams(dp(144), dp(144), Gravity.CENTER).apply {
+            FrameLayout.LayoutParams(dp(108), dp(108), Gravity.CENTER).apply {
                 bottomMargin = dp(30)
             },
         )
