@@ -58,6 +58,7 @@ class IntroActivity : AppCompatActivity() {
                     )
                     setBackgroundColor(Color.TRANSPARENT)
                     start()
+                    handler.postDelayed(videoTimeout, VIDEO_TIMEOUT_MS)
                 }
                 setOnCompletionListener {
                     onVideoFinished()
@@ -91,7 +92,6 @@ class IntroActivity : AppCompatActivity() {
             Uri.parse("android.resource://" + packageName + "/" + R.raw.pg_music_intro),
         )
         video.requestFocus()
-        handler.postDelayed(videoTimeout, VIDEO_TIMEOUT_MS)
 
         validateSavedKey()
     }
@@ -230,7 +230,7 @@ class IntroActivity : AppCompatActivity() {
 
     companion object {
         private const val EXTRA_FORWARD_INTENT = "pg_music_intro_forward_intent"
-        private const val VIDEO_TIMEOUT_MS = 7_500L
+        private const val VIDEO_TIMEOUT_MS = 8_000L
 
         fun createIntent(
             context: Context,
