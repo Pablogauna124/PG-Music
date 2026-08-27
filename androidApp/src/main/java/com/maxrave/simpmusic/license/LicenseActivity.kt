@@ -23,11 +23,9 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.maxrave.simpmusic.MainActivity
 import com.maxrave.simpmusic.R
 import kotlin.math.PI
 import kotlin.math.sin
@@ -35,7 +33,6 @@ import kotlin.math.sin
 class LicenseActivity : AppCompatActivity() {
     private lateinit var keyInput: EditText
     private lateinit var activateButton: Button
-    private lateinit var progress: ProgressBar
     private lateinit var status: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,10 +42,8 @@ class LicenseActivity : AppCompatActivity() {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         buildUi()
 
-        LicenseManager.savedKey(this)?.let { savedKey ->
-            keyInput.setText(savedKey)
-            validate(savedKey, showIntro = false)
-        }
+        LicenseManager.savedKey(this)?.let(keyInput::setText)
+        showInitialError()
     }
 
     private fun buildUi() {
@@ -245,18 +240,6 @@ class LicenseActivity : AppCompatActivity() {
             },
         )
 
-        progress =
-            ProgressBar(this).apply {
-                visibility = View.GONE
-                isIndeterminate = true
-            }
-        card.addView(
-            progress,
-            LinearLayout.LayoutParams(dp(32), dp(32)).apply {
-                topMargin = dp(14)
-            },
-        )
-
         status =
             TextView(this).apply {
                 textSize = 14f
@@ -290,55 +273,30 @@ class LicenseActivity : AppCompatActivity() {
     }
 
     private fun submit() {
-        validate(keyInput.text.toString(), showIntro = true)
-    }
-
-    private fun validate(
-        key: String,
-        showIntro: Boolean,
-    ) {
+        val key = keyInput.text.toString().trim()
         if (key.isBlank()) {
             showStatus("Ingresá una KEY para continuar", isError = true)
             return
         }
 
-        setBusy(true)
+        LicenseManager.saveKey(this, key)
         showStatus("Validando licencia…", isError = false)
-
-        LicenseManager.validate(this, key) { result ->
-            runOnUiThread {
-                if (isFinishing || isDestroyed) return@runOnUiThread
-                setBusy(false)
-
-                if (result.valid) {
-                    LicenseManager.saveKey(this, key)
-                    LicenseManager.markSessionValidated()
-                    showStatus("Licencia activa", isError = false)
-                    activateButton.postDelayed(
-                        {
-                            if (showIntro) {
-                                launchIntro()
-                            } else {
-                                launchMain()
-                            }
-                        },
-                        250,
-                    )
-                } else {
-                    if (result.status != "network_error") {
-                        LicenseManager.clearKey(this)
-                    }
-                    showStatus(statusMessage(result), isError = true)
-                }
-            }
-        }
+        launchIntro()
     }
 
-    private fun setBusy(busy: Boolean) {
-        keyInput.isEnabled = !busy
-        activateButton.isEnabled = !busy
-        activateButton.alpha = if (busy) 0.55f else 1f
-        progress.visibility = if (busy) View.VISIBLE else View.GONE
+    private fun showInitialError() {
+        val errorStatus = intent.getStringExtra(EXTRA_ERROR_STATUS) ?: return
+        val errorMessage = intent.getStringExtra(EXTRA_ERROR_MESSAGE)
+        showStatus(
+            statusMessage(
+                LicenseManager.Result(
+                    valid = false,
+                    status = errorStatus,
+                    message = errorMessage,
+                ),
+            ),
+            isError = true,
+        )
     }
 
     private fun showStatus(
@@ -373,17 +331,6 @@ class LicenseActivity : AppCompatActivity() {
                 sourceIntent = forwardedIntent(),
             ),
         )
-        finish()
-    }
-
-    private fun launchMain() {
-        val destination =
-            forwardedIntent()?.apply {
-                setClass(this@LicenseActivity, MainActivity::class.java)
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            } ?: Intent(this, MainActivity::class.java)
-
-        startActivity(destination)
         finish()
     }
 
@@ -523,14 +470,24 @@ class LicenseActivity : AppCompatActivity() {
 
     companion object {
         private const val EXTRA_FORWARD_INTENT = "pg_music_forward_intent"
+        private const val EXTRA_ERROR_STATUS = "pg_music_license_error_status"
+        private const val EXTRA_ERROR_MESSAGE = "pg_music_license_error_message"
 
         fun createIntent(
             context: Context,
             sourceIntent: Intent?,
+            errorStatus: String? = null,
+            errorMessage: String? = null,
         ): Intent =
             Intent(context, LicenseActivity::class.java).apply {
                 sourceIntent?.let {
                     putExtra(EXTRA_FORWARD_INTENT, Intent(it))
+                }
+                errorStatus?.let {
+                    putExtra(EXTRA_ERROR_STATUS, it)
+                }
+                errorMessage?.let {
+                    putExtra(EXTRA_ERROR_MESSAGE, it)
                 }
             }
     }
