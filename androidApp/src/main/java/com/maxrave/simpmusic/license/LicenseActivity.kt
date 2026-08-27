@@ -42,7 +42,9 @@ class LicenseActivity : AppCompatActivity() {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         buildUi()
 
-        LicenseManager.savedKey(this)?.let(keyInput::setText)
+        LicenseManager.savedKey(this)?.let { savedKey ->
+            keyInput.setText(savedKey)
+        }
         showInitialError()
     }
 
