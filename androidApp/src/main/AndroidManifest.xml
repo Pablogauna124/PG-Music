@@ -60,6 +60,12 @@
         tools:targetApi="tiramisu">
 
         <activity
+            android:name=".license.IntroActivity"
+            android:exported="false"
+            android:screenOrientation="unspecified"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+
+        <activity
             android:name=".license.LicenseActivity"
             android:exported="false"
             android:screenOrientation="unspecified"
