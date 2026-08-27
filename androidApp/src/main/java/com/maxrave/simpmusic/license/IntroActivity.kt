@@ -4,12 +4,15 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ProgressBar
@@ -22,7 +25,7 @@ class IntroActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private val videoTimeout = Runnable { onVideoFinished() }
 
-    private lateinit var video: VideoView
+    private lateinit var video: FullscreenVideoView
     private lateinit var progress: ProgressBar
 
     private var videoFinished = false
@@ -38,6 +41,7 @@ class IntroActivity : AppCompatActivity() {
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        enterFullscreen()
 
         val root =
             FrameLayout(this).apply {
@@ -45,10 +49,13 @@ class IntroActivity : AppCompatActivity() {
             }
 
         video =
-            VideoView(this).apply {
+            FullscreenVideoView(this).apply {
                 setBackgroundColor(Color.BLACK)
                 setOnPreparedListener { player ->
                     player.isLooping = false
+                    player.setVideoScalingMode(
+                        MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING,
+                    )
                     setBackgroundColor(Color.TRANSPARENT)
                     start()
                 }
@@ -182,6 +189,42 @@ class IntroActivity : AppCompatActivity() {
         } else {
             intent.getParcelableExtra(EXTRA_FORWARD_INTENT)
         }
+
+    private fun enterFullscreen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+            window.insetsController?.let { controller ->
+                controller.hide(
+                    WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars(),
+                )
+                controller.systemBarsBehavior =
+                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                    View.SYSTEM_UI_FLAG_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        }
+    }
+
+    private class FullscreenVideoView(
+        context: Context,
+    ) : VideoView(context) {
+        override fun onMeasure(
+            widthMeasureSpec: Int,
+            heightMeasureSpec: Int,
+        ) {
+            setMeasuredDimension(
+                View.MeasureSpec.getSize(widthMeasureSpec),
+                View.MeasureSpec.getSize(heightMeasureSpec),
+            )
+        }
+    }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
