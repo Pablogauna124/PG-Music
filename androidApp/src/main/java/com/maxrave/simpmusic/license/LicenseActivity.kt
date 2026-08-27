@@ -26,6 +26,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.maxrave.simpmusic.MainActivity
 import com.maxrave.simpmusic.R
 import kotlin.math.PI
 import kotlin.math.sin
@@ -42,10 +43,13 @@ class LicenseActivity : AppCompatActivity() {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         buildUi()
 
-        LicenseManager.savedKey(this)?.let { savedKey ->
+        val savedKey = LicenseManager.savedKey(this)
+        if (savedKey != null) {
             keyInput.setText(savedKey)
+            validate(savedKey)
+        } else {
+            showInitialError()
         }
-        showInitialError()
     }
 
     private fun buildUi() {
@@ -275,15 +279,42 @@ class LicenseActivity : AppCompatActivity() {
     }
 
     private fun submit() {
-        val key = keyInput.text.toString().trim()
+        validate(keyInput.text.toString().trim())
+    }
+
+    private fun validate(key: String) {
         if (key.isBlank()) {
             showStatus("Ingresá una KEY para continuar", isError = true)
             return
         }
 
-        LicenseManager.saveKey(this, key)
+        setBusy(true)
         showStatus("Validando licencia…", isError = false)
-        launchIntro()
+
+        LicenseManager.validate(this, key) { result ->
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                setBusy(false)
+
+                if (result.valid) {
+                    LicenseManager.saveKey(this, key)
+                    LicenseManager.markSessionValidated()
+                    showStatus("Licencia activa", isError = false)
+                    activateButton.postDelayed({ launchMain() }, 200)
+                } else {
+                    if (result.status != "network_error") {
+                        LicenseManager.clearKey(this)
+                    }
+                    showStatus(statusMessage(result), isError = true)
+                }
+            }
+        }
+    }
+
+    private fun setBusy(busy: Boolean) {
+        keyInput.isEnabled = !busy
+        activateButton.isEnabled = !busy
+        activateButton.alpha = if (busy) 0.55f else 1f
     }
 
     private fun showInitialError() {
@@ -326,13 +357,14 @@ class LicenseActivity : AppCompatActivity() {
             else -> result.message ?: "No se pudo validar la licencia"
         }
 
-    private fun launchIntro() {
-        startActivity(
-            IntroActivity.createIntent(
-                context = this,
-                sourceIntent = forwardedIntent(),
-            ),
-        )
+    private fun launchMain() {
+        val destination =
+            forwardedIntent()?.apply {
+                setClass(this@LicenseActivity, MainActivity::class.java)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            } ?: Intent(this, MainActivity::class.java)
+
+        startActivity(destination)
         finish()
     }
 
