@@ -2,7 +2,13 @@ package com.maxrave.simpmusic.license
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RadialGradient
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -23,6 +29,8 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.maxrave.simpmusic.MainActivity
 import com.maxrave.simpmusic.R
+import kotlin.math.PI
+import kotlin.math.sin
 
 class LicenseActivity : AppCompatActivity() {
     private lateinit var keyInput: EditText
@@ -49,6 +57,14 @@ class LicenseActivity : AppCompatActivity() {
                 setBackgroundColor(Color.rgb(3, 3, 5))
             }
 
+        root.addView(
+            ActivationBackgroundView(this),
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+            ),
+        )
+
         val scroll =
             ScrollView(this).apply {
                 isFillViewport = true
@@ -73,16 +89,57 @@ class LicenseActivity : AppCompatActivity() {
                         strokeColor = Color.rgb(148, 18, 30),
                         strokeWidth = 1,
                     )
-                elevation = dp(12).toFloat()
+                elevation = dp(18).toFloat()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    outlineAmbientShadowColor = Color.rgb(120, 0, 18)
+                    outlineSpotShadowColor = Color.rgb(220, 18, 38)
+                }
             }
 
-        card.addView(
+        val logoHalo =
+            FrameLayout(this).apply {
+                background =
+                    GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        gradientType = GradientDrawable.RADIAL_GRADIENT
+                        colors =
+                            intArrayOf(
+                                Color.argb(115, 235, 20, 42),
+                                Color.argb(35, 180, 0, 20),
+                                Color.TRANSPARENT,
+                            )
+                        setGradientRadius(dp(68).toFloat())
+                    }
+            }
+        logoHalo.addView(
             ImageView(this).apply {
                 setImageResource(R.mipmap.ic_launcher)
                 contentDescription = "PG Music"
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
             },
-            LinearLayout.LayoutParams(dp(92), dp(92)),
+            FrameLayout.LayoutParams(dp(94), dp(94), Gravity.CENTER),
+        )
+        card.addView(logoHalo, LinearLayout.LayoutParams(dp(132), dp(132)))
+
+        card.addView(
+            TextView(this).apply {
+                text = "LICENCIA OFICIAL"
+                textSize = 10f
+                gravity = Gravity.CENTER
+                setTextColor(Color.rgb(255, 190, 196))
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(dp(12), dp(5), dp(12), dp(5))
+                background =
+                    roundedBackground(
+                        color = Color.argb(115, 120, 0, 18),
+                        radius = 20,
+                        strokeColor = Color.rgb(176, 20, 38),
+                        strokeWidth = 1,
+                    )
+            },
+            wrapWrap().apply {
+                topMargin = dp(2)
+            },
         )
 
         card.addView(
@@ -115,7 +172,20 @@ class LicenseActivity : AppCompatActivity() {
                 textSize = 14f
                 gravity = Gravity.CENTER
                 setTextColor(Color.rgb(184, 184, 192))
-                setPadding(0, dp(6), 0, dp(22))
+                setPadding(0, dp(6), 0, dp(10))
+            },
+            matchWrap(),
+        )
+
+        card.addView(
+            TextView(this).apply {
+                text = "ACTIVACIÓN SEGURA  •  HASTA 3 DISPOSITIVOS"
+                textSize = 10f
+                gravity = Gravity.CENTER
+                letterSpacing = 0.08f
+                setTextColor(Color.rgb(206, 65, 78))
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, 0, 0, dp(22))
             },
             matchWrap(),
         )
@@ -164,6 +234,7 @@ class LicenseActivity : AppCompatActivity() {
                         intArrayOf(Color.rgb(242, 35, 48), Color.rgb(168, 0, 18)),
                     ).apply {
                         cornerRadius = dp(12).toFloat()
+                        setStroke(dp(1), Color.rgb(255, 72, 84))
                     }
                 setOnClickListener { submit() }
             }
@@ -194,6 +265,18 @@ class LicenseActivity : AppCompatActivity() {
                 setPadding(0, dp(10), 0, 0)
             }
         card.addView(status, matchWrap())
+
+        card.addView(
+            TextView(this).apply {
+                text = "PG MUSIC  •  ACCESO PROTEGIDO"
+                textSize = 10f
+                gravity = Gravity.CENTER
+                letterSpacing = 0.1f
+                setTextColor(Color.rgb(105, 105, 114))
+                setPadding(0, dp(18), 0, 0)
+            },
+            matchWrap(),
+        )
 
         val availableWidth = (resources.configuration.screenWidthDp - 44).coerceAtLeast(280)
         val cardWidth = dp(minOf(availableWidth, 520))
@@ -308,7 +391,113 @@ class LicenseActivity : AppCompatActivity() {
             LinearLayout.LayoutParams.WRAP_CONTENT,
         )
 
+    private fun wrapWrap() =
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        )
+
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private class ActivationBackgroundView(
+        context: Context,
+    ) : View(context) {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val wavePaint =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+            }
+        private val wavePath = Path()
+        private val points =
+            floatArrayOf(
+                0.08f, 0.18f,
+                0.18f, 0.31f,
+                0.86f, 0.20f,
+                0.92f, 0.38f,
+                0.11f, 0.63f,
+                0.81f, 0.69f,
+                0.22f, 0.86f,
+                0.72f, 0.90f,
+            )
+
+        override fun onDraw(canvas: Canvas) {
+            super.onDraw(canvas)
+            val width = width.toFloat()
+            val height = height.toFloat()
+            if (width <= 0f || height <= 0f) return
+
+            paint.shader =
+                RadialGradient(
+                    width * 0.18f,
+                    height * 0.16f,
+                    width * 0.72f,
+                    intArrayOf(
+                        Color.argb(90, 205, 0, 28),
+                        Color.argb(25, 120, 0, 18),
+                        Color.TRANSPARENT,
+                    ),
+                    floatArrayOf(0f, 0.45f, 1f),
+                    Shader.TileMode.CLAMP,
+                )
+            canvas.drawCircle(width * 0.18f, height * 0.16f, width * 0.72f, paint)
+
+            paint.shader =
+                RadialGradient(
+                    width * 0.92f,
+                    height * 0.72f,
+                    width * 0.64f,
+                    intArrayOf(
+                        Color.argb(55, 150, 0, 25),
+                        Color.TRANSPARENT,
+                    ),
+                    null,
+                    Shader.TileMode.CLAMP,
+                )
+            canvas.drawCircle(width * 0.92f, height * 0.72f, width * 0.64f, paint)
+
+            paint.shader =
+                LinearGradient(
+                    0f,
+                    height * 0.28f,
+                    width,
+                    height * 0.62f,
+                    intArrayOf(
+                        Color.TRANSPARENT,
+                        Color.argb(20, 255, 35, 55),
+                        Color.TRANSPARENT,
+                    ),
+                    null,
+                    Shader.TileMode.CLAMP,
+                )
+            canvas.drawRect(0f, 0f, width, height, paint)
+            paint.shader = null
+
+            points.forEachIndexed { index, value ->
+                if (index % 2 == 0) {
+                    val x = value * width
+                    val y = points[index + 1] * height
+                    paint.color = Color.argb(80, 235, 45, 62)
+                    canvas.drawCircle(x, y, if (index % 4 == 0) 2.5f else 1.6f, paint)
+                }
+            }
+
+            repeat(3) { layer ->
+                wavePath.reset()
+                val centerY = height * (0.76f + layer * 0.055f)
+                val amplitude = height * (0.016f + layer * 0.004f)
+                var x = 0f
+                while (x <= width) {
+                    val phase = (x / width) * PI * (3.4 + layer * 0.35)
+                    val y = centerY + sin(phase + layer * 0.8).toFloat() * amplitude
+                    if (x == 0f) wavePath.moveTo(x, y) else wavePath.lineTo(x, y)
+                    x += 8f
+                }
+                wavePaint.color = Color.argb(42 - layer * 9, 235, 30, 50)
+                wavePaint.strokeWidth = (2.2f - layer * 0.45f).coerceAtLeast(1f)
+                canvas.drawPath(wavePath, wavePaint)
+            }
+        }
+    }
 
     companion object {
         private const val EXTRA_FORWARD_INTENT = "pg_music_forward_intent"
