@@ -62,7 +62,7 @@
         <activity
             android:name=".license.IntroActivity"
             android:exported="false"
-            android:screenOrientation="unspecified"
+            android:screenOrientation="landscape"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
 
         <activity
@@ -78,7 +78,7 @@
             android:supportsPictureInPicture="true"
             android:enableOnBackInvokedCallback="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
+            android:theme="@style/Theme.PGMusic.Launcher"
             tools:ignore="DiscouragedApi,LockedOrientationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
