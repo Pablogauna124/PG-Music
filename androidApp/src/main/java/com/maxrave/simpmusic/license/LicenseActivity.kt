@@ -195,12 +195,11 @@ class LicenseActivity : AppCompatActivity() {
             }
         card.addView(status, matchWrap())
 
+        val availableWidth = (resources.configuration.screenWidthDp - 44).coerceAtLeast(280)
+        val cardWidth = dp(minOf(availableWidth, 520))
         screen.addView(
             card,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                val maxWidth = dp(520)
-                width = maxWidth
-            },
+            LinearLayout.LayoutParams(cardWidth, LinearLayout.LayoutParams.WRAP_CONTENT),
         )
         scroll.addView(screen)
         root.addView(scroll, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
