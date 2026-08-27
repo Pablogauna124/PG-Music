@@ -157,6 +157,7 @@ dependencies {
     implementation(libs.legacy.support.v4)
     // Coroutines
     implementation(libs.coroutines.android)
+    implementation(libs.okhttp3.okhttp)
 
     // Glance
     implementation(libs.glance)
