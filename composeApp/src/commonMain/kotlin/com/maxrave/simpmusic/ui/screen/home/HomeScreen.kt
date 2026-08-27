@@ -265,32 +265,8 @@ fun HomeScreen(
         } else {
             backgroundColor
         }
-    var topHeaderColor by remember {
-        mutableStateOf(backgroundColor)
-    }
-    val animatedColor by animateColorAsState(topHeaderColor, tween(500))
-    val mainHomeThumbnail by viewModel.mainHomeThumbnail.collectAsStateWithLifecycle()
-    val networkLoader = rememberNetworkLoader(HttpClient(CIO))
-    val dominantColorState =
-        rememberDominantColorState(
-            defaultColor = backgroundColor,
-            defaultOnColor = backgroundColor,
-            loader = networkLoader,
-        )
-
-    LaunchedEffect(mainHomeThumbnail) {
-        mainHomeThumbnail?.let {
-            dominantColorState.updateFrom(Url(it))
-        }
-    }
-
-    LaunchedEffect(dominantColorState, isLightTheme) {
-        snapshotFlow { dominantColorState.color }.collect {
-            // Light theme: pull the artwork color toward white for a soft pastel header;
-            // dark theme keeps the original darkened tone.
-            topHeaderColor = if (isLightTheme) lerp(it, Color.White, 0.85f) else it.rgbFactor(0.3f)
-        }
-    }
+    // PG Music: encabezado fijo para evitar analizar portadas y recomponer toda la pantalla.
+    val animatedColor = MaterialTheme.colorScheme.primaryContainer
 
     var showReviewDialog by rememberSaveable {
         mutableStateOf(false)
@@ -308,7 +284,7 @@ fun HomeScreen(
 
     val hazeState =
         rememberHazeState(
-            blurEnabled = true,
+            blurEnabled = false,
         )
 
     LaunchedEffect(scrollState) {
@@ -546,7 +522,7 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(20.dp),
                     ) {
                         itemsIndexed(homeData, key = { _, item ->
-                            item.hashCode().toString() + (mainHomeThumbnail ?: "nothumb")
+                            item.hashCode().toString()
                         }) { index, item ->
                             Box {
                                 if (index == 0) {
@@ -646,7 +622,7 @@ fun HomeScreen(
                             AnimatedVisibility(
                                 homeListState == ListState.PAGINATING,
                                 enter = expandVertically() + expandVertically(),
-                                exit = fadeOut() + shrinkVertically(),
+                                exit = androidx.compose.animation.ExitTransition.None,
                             ) {
                                 CenterLoadingBox(
                                     modifier =
@@ -766,7 +742,7 @@ fun HomeScreen(
         AnimatedContent(
             targetState = scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0,
             transitionSpec = {
-                fadeIn(tween(300)).togetherWith(fadeOut(tween(300)))
+                fadeIn(tween(0)).togetherWith(fadeOut(tween(0)))
             },
         ) { target ->
             Column(
@@ -779,7 +755,7 @@ fun HomeScreen(
                             } else {
                                 Modifier
                                     .hazeEffect(hazeState, style = HazeMaterials.ultraThin()) {
-                                        blurEnabled = true
+                                        blurEnabled = false
                                     }
                             },
                         ).onGloballyPositioned { coordinates ->
@@ -788,15 +764,15 @@ fun HomeScreen(
             ) {
                 AnimatedVisibility(
                     visible = isScrollingUp,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically(),
+                    enter = androidx.compose.animation.EnterTransition.None,
+                    exit = androidx.compose.animation.ExitTransition.None,
                 ) {
                     HomeTopAppBar(navController)
                 }
                 AnimatedVisibility(
                     visible = !isScrollingUp,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically(),
+                    enter = androidx.compose.animation.EnterTransition.None,
+                    exit = androidx.compose.animation.ExitTransition.None,
                 ) {
                     Spacer(
                         modifier =
@@ -943,7 +919,7 @@ fun AccountLayout(
                         .data(url)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(url)
-                        .crossfade(true)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(),
                 error = rememberHolderPainter(),

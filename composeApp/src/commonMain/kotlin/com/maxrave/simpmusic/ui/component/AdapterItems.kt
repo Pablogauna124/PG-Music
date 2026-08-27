@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
@@ -154,7 +153,7 @@ fun HomeItem(
                             .data(data.thumbnail?.lastOrNull()?.url)
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .diskCacheKey(data.thumbnail?.lastOrNull()?.url)
-                            .crossfade(550)
+                            .crossfade(false)
                             .build(),
                     contentDescription = "",
                     placeholder = rememberHolderPainter(),
@@ -351,7 +350,7 @@ fun HomeItemContentPlaylist(
                         .data(thumb)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumb)
-                        .crossfade(550)
+                        .crossfade(false)
                         .build(),
                 placeholder =
                     when (data) {
@@ -514,12 +513,7 @@ fun HomeItemContentPlaylist(
                 modifier =
                     Modifier
                         .width(thumbSize)
-                        .wrapContentHeight(align = Alignment.CenterVertically)
-                        .basicMarquee(
-                            initialDelayMillis = 2000,
-                            repeatDelayMillis = 2000,
-                            velocity = 25.dp,
-                        ),
+                        .wrapContentHeight(align = Alignment.CenterVertically),
             )
         }
     }
@@ -557,7 +551,7 @@ fun QuickPicksItem(
                     ImageRequest
                         .Builder(LocalPlatformContext.current)
                         .data(data.thumbnails.lastOrNull()?.url)
-                        .crossfade(550)
+                        .crossfade(false)
                         .diskCacheKey(data.thumbnails.lastOrNull()?.url)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .build(),
@@ -594,11 +588,6 @@ fun QuickPicksItem(
                             .wrapContentHeight(align = Alignment.CenterVertically)
                             .padding(
                                 bottom = 3.dp,
-                            ).basicMarquee(
-                                iterations = Int.MAX_VALUE,
-                                initialDelayMillis = 2000,
-                                repeatDelayMillis = 2000,
-                                velocity = 25.dp,
                             ),
                 )
                 LazyRow(verticalAlignment = Alignment.CenterVertically) {
@@ -623,12 +612,7 @@ fun QuickPicksItem(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .wrapContentHeight(align = Alignment.CenterVertically)
-                                    .basicMarquee(
-                                        initialDelayMillis = 2000,
-                                        repeatDelayMillis = 2000,
-                                        velocity = 25.dp,
-                                    ),
+                                    .wrapContentHeight(align = Alignment.CenterVertically),
                         )
                     }
                 }
@@ -669,7 +653,6 @@ fun HomeItemSong(
                         it
                     }
                 }
-            Logger.w("AsyncImage", "HomeItemSong: $thumb")
             AsyncImage(
                 model =
                     ImageRequest
@@ -677,7 +660,7 @@ fun HomeItemSong(
                         .data(thumb)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumb)
-                        .crossfade(550)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(),
                 error = rememberHolderPainter(),
@@ -727,11 +710,6 @@ fun HomeItemSong(
                         Modifier
                             .width(160.dp)
                             .wrapContentHeight(align = Alignment.CenterVertically)
-                            .basicMarquee(
-                                initialDelayMillis = 2000,
-                                repeatDelayMillis = 2000,
-                                velocity = 25.dp,
-                            )
                             .padding(vertical = 3.dp),
                 )
             }
@@ -765,7 +743,6 @@ fun HomeItemVideo(
                     .heightIn(min = 236.dp),
         ) {
             val thumb = data.thumbnails.lastOrNull()?.url
-            Logger.w("AsyncImage", "HomeItemSong: $thumb")
             AsyncImage(
                 model =
                     ImageRequest
@@ -773,7 +750,7 @@ fun HomeItemVideo(
                         .data(thumb)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumb)
-                        .crossfade(550)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(isVideo = true),
                 error = rememberHolderPainter(isVideo = true),
@@ -814,11 +791,6 @@ fun HomeItemVideo(
                     Modifier
                         .width(284.5.dp)
                         .wrapContentHeight(align = Alignment.CenterVertically)
-                        .basicMarquee(
-                            initialDelayMillis = 2000,
-                            repeatDelayMillis = 2000,
-                            velocity = 25.dp,
-                        )
                         .padding(vertical = 2.dp),
             )
         }
@@ -849,7 +821,6 @@ fun HomeItemArtist(
                     .heightIn(min = 236.dp),
         ) {
             val thumb = data.thumbnails.lastOrNull()?.url
-            Logger.w("AsyncImage", "HomeItemSong: $thumb")
             AsyncImage(
                 model =
                     ImageRequest
@@ -857,7 +828,7 @@ fun HomeItemArtist(
                         .data(thumb)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumb)
-                        .crossfade(550)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(),
                 error = rememberHolderPainter(),
@@ -894,12 +865,7 @@ fun HomeItemArtist(
                 modifier =
                     Modifier
                         .width(160.dp)
-                        .wrapContentHeight(align = Alignment.CenterVertically)
-                        .basicMarquee(
-                            initialDelayMillis = 2000,
-                            repeatDelayMillis = 2000,
-                            velocity = 25.dp,
-                        ),
+                        .wrapContentHeight(align = Alignment.CenterVertically),
             )
         }
     }
@@ -969,7 +935,6 @@ fun ItemVideoChart(
                     .padding(10.dp),
         ) {
             val thumb = data.thumbnails.lastOrNull()?.url
-            Logger.w("AsyncImage", "HomeItemSong: $thumb")
             AsyncImage(
                 model =
                     ImageRequest
@@ -977,7 +942,7 @@ fun ItemVideoChart(
                         .data(thumb)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumb)
-                        .crossfade(550)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(isVideo = true),
                 error = rememberHolderPainter(isVideo = true),
@@ -1031,11 +996,6 @@ fun ItemVideoChart(
                             Modifier
                                 .width(210.dp)
                                 .wrapContentHeight(align = Alignment.CenterVertically)
-                                .basicMarquee(
-                                    initialDelayMillis = 2000,
-                                    repeatDelayMillis = 2000,
-                                    velocity = 25.dp,
-                                )
                                 .padding(vertical = 3.dp),
                     )
                 }
@@ -1078,7 +1038,6 @@ fun ItemArtistChart(
                         .padding(end = 20.dp),
             )
             val thumb = data.thumbnails.lastOrNull()?.url
-            Logger.w("AsyncImage", "HomeItemSong: $thumb")
             AsyncImage(
                 model =
                     ImageRequest
@@ -1086,7 +1045,7 @@ fun ItemArtistChart(
                         .data(thumb)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumb)
-                        .crossfade(550)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(),
                 error = rememberHolderPainter(),
@@ -1134,12 +1093,7 @@ fun ItemArtistChart(
                     overflow = TextOverflow.Ellipsis,
                     modifier =
                         Modifier
-                            .wrapContentHeight(align = Alignment.CenterVertically)
-                            .basicMarquee(
-                                initialDelayMillis = 2000,
-                                repeatDelayMillis = 2000,
-                                velocity = 25.dp,
-                            ),
+                            .wrapContentHeight(align = Alignment.CenterVertically),
                 )
             }
         }
@@ -1189,7 +1143,6 @@ fun ItemTrackChart(
                 }
             }
             val thumb = data.thumbnails?.lastOrNull()?.url
-            Logger.w("AsyncImage", "HomeItemSong: $thumb")
             AsyncImage(
                 model =
                     ImageRequest
@@ -1197,7 +1150,7 @@ fun ItemTrackChart(
                         .data(thumb)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumb)
-                        .crossfade(550)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(),
                 error = rememberHolderPainter(),
@@ -1242,12 +1195,7 @@ fun ItemTrackChart(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .wrapContentHeight(align = Alignment.CenterVertically)
-                            .basicMarquee(
-                                initialDelayMillis = 2000,
-                                repeatDelayMillis = 2000,
-                                velocity = 25.dp,
-                            ),
+                            .wrapContentHeight(align = Alignment.CenterVertically),
                 )
             }
         }
