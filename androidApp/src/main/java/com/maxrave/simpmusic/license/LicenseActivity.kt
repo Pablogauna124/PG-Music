@@ -47,7 +47,7 @@ class LicenseActivity : AppCompatActivity() {
 
         LicenseManager.savedKey(this)?.let { savedKey ->
             keyInput.setText(savedKey)
-            validate(savedKey)
+            validate(savedKey, showIntro = false)
         }
     }
 
@@ -290,10 +290,13 @@ class LicenseActivity : AppCompatActivity() {
     }
 
     private fun submit() {
-        validate(keyInput.text.toString())
+        validate(keyInput.text.toString(), showIntro = true)
     }
 
-    private fun validate(key: String) {
+    private fun validate(
+        key: String,
+        showIntro: Boolean,
+    ) {
         if (key.isBlank()) {
             showStatus("Ingresá una KEY para continuar", isError = true)
             return
@@ -311,7 +314,16 @@ class LicenseActivity : AppCompatActivity() {
                     LicenseManager.saveKey(this, key)
                     LicenseManager.markSessionValidated()
                     showStatus("Licencia activa", isError = false)
-                    activateButton.postDelayed({ launchMain() }, 250)
+                    activateButton.postDelayed(
+                        {
+                            if (showIntro) {
+                                launchIntro()
+                            } else {
+                                launchMain()
+                            }
+                        },
+                        250,
+                    )
                 } else {
                     if (result.status != "network_error") {
                         LicenseManager.clearKey(this)
@@ -353,6 +365,16 @@ class LicenseActivity : AppCompatActivity() {
             "network_error" -> "Sin conexión con el servidor. Intentá nuevamente"
             else -> result.message ?: "No se pudo validar la licencia"
         }
+
+    private fun launchIntro() {
+        startActivity(
+            IntroActivity.createIntent(
+                context = this,
+                sourceIntent = forwardedIntent(),
+            ),
+        )
+        finish()
+    }
 
     private fun launchMain() {
         val destination =
