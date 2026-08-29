@@ -8,7 +8,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.dp
  * decoration that added very little. Selection is now communicated with a compact premium pill,
  * using the app theme so PG Music keeps its identity without hard-coded colours.
  */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun Chip(
     isAnimated: Boolean = false,
