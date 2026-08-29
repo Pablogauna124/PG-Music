@@ -13,12 +13,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * PG Music filter chip.
+ * PG Music Home filter pill.
  *
- * Deliberately avoids the old infinite animated border: these chips live in the Home header and
- * remain on screen while the user scrolls, so a permanent animation kept invalidating frames for
- * decoration that added very little. Selection is now communicated with a compact premium pill,
- * using the app theme so PG Music keeps its identity without hard-coded colours.
+ * Keeps the control lightweight (no infinite border animation or shadow) while giving the Home
+ * header the compact outlined-pill treatment used by PG Music. Colours remain theme driven so the
+ * selected chip follows the app accent and unselected chips stay subtle over the OLED background.
  */
 @Suppress("UNUSED_PARAMETER")
 @Composable
@@ -32,28 +31,28 @@ fun Chip(
         ElevatedFilterChip(
             selected = isSelected,
             onClick = onClick,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(22.dp),
             elevation = FilterChipDefaults.elevatedFilterChipElevation(elevation = 0.dp),
             colors =
                 FilterChipDefaults.elevatedFilterChipColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.28f),
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.12f),
                     selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.82f),
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                 ),
             border =
                 FilterChipDefaults.filterChipBorder(
                     enabled = true,
                     selected = isSelected,
-                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.38f),
-                    selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                    borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.58f),
+                    selectedBorderColor = MaterialTheme.colorScheme.primary,
                 ),
             label = {
                 Text(
                     text = text,
                     maxLines = 1,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 )
             },
         )
