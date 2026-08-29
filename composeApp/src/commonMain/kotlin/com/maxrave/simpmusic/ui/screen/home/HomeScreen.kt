@@ -3,12 +3,9 @@ package com.maxrave.simpmusic.ui.screen.home
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -29,9 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -43,7 +38,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -71,22 +65,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.CachePolicy
-import coil3.request.ImageRequest
-import coil3.request.crossfade
-import com.kmpalette.loader.rememberNetworkLoader
-import com.kmpalette.rememberDominantColorState
 import com.maxrave.common.CHART_SUPPORTED_COUNTRY
 import com.maxrave.common.Config
 import com.maxrave.domain.data.model.browse.album.Track
@@ -103,7 +88,6 @@ import com.maxrave.simpmusic.Platform
 import com.maxrave.simpmusic.extension.angledGradientBackground
 import com.maxrave.simpmusic.extension.artworkScrimBrush
 import com.maxrave.simpmusic.extension.isScrollingUp
-import com.maxrave.simpmusic.extension.rgbFactor
 import com.maxrave.simpmusic.getPlatform
 import com.maxrave.simpmusic.ui.component.BlogPromoDialog
 import com.maxrave.simpmusic.ui.component.CenterLoadingBox
@@ -122,8 +106,6 @@ import com.maxrave.simpmusic.ui.component.QuickPicksItem
 import com.maxrave.simpmusic.ui.component.ReviewDialog
 import com.maxrave.simpmusic.ui.component.RippleIconButton
 import com.maxrave.simpmusic.ui.component.ShareSavedLyricsDialog
-import com.maxrave.simpmusic.ui.component.rememberHolderPainter
-import com.maxrave.simpmusic.ui.icon.Groups
 import com.maxrave.simpmusic.ui.icon.History
 import com.maxrave.simpmusic.ui.icon.Notifications
 import com.maxrave.simpmusic.ui.icon.Settings
@@ -159,11 +141,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.http.Url
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -193,7 +171,6 @@ import simpmusic.composeapp.generated.resources.sad
 import simpmusic.composeapp.generated.resources.sleep
 import simpmusic.composeapp.generated.resources.top_artists
 import simpmusic.composeapp.generated.resources.warning
-import simpmusic.composeapp.generated.resources.welcome_back
 import simpmusic.composeapp.generated.resources.what_is_best_choice_today
 import simpmusic.composeapp.generated.resources.workout
 
@@ -225,7 +202,6 @@ fun HomeScreen(
     val moodMomentAndGenre by viewModel.exploreMoodItem.collectAsStateWithLifecycle()
     val chartLoading by viewModel.loadingChart.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
-    var accountShow by rememberSaveable { mutableStateOf(false) }
     val regionChart by viewModel.regionCodeChart.collectAsStateWithLifecycle()
     val reloadDestination by sharedViewModel.reloadDestination.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
@@ -276,9 +252,6 @@ fun HomeScreen(
             sharedViewModel.reloadDestinationDone()
             coroutineScope.launch { pullToRefreshState.animateToHidden() }
         }
-    }
-    LaunchedEffect(key1 = homeData) {
-        accountShow = homeData.find { it.subtitle == accountInfo?.first } == null
     }
     LaunchedEffect(openAppTime, shareLyricsPermissions) {
         if (openAppTime >= 10 && openAppTime % 10 == 0 && openAppTime <= 50) {
@@ -370,21 +343,17 @@ fun HomeScreen(
                         OfflineErrorState(onRetry = onRefresh, onOpenDownloaded = { navController.navigate(LibraryDynamicPlaylistDestination(type = LibraryDynamicPlaylistType.Downloaded.toStringParams())) })
                         return@Crossfade
                     }
-                    LazyColumn(state = scrollState, verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    LazyColumn(state = scrollState, verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         itemsIndexed(homeData, key = { _, item -> item.hashCode().toString() }) { index, item ->
                             Box {
                                 if (index == 0) {
                                     Box(Modifier.matchParentSize().angledGradientBackground(listOf(heroAccentColor, pageBackground), 25f)) {
-                                        Box(Modifier.fillMaxWidth().height(180.dp).align(Alignment.BottomCenter).background(artworkScrimBrush(pageBackground)))
+                                        Box(Modifier.fillMaxWidth().height(150.dp).align(Alignment.BottomCenter).background(artworkScrimBrush(pageBackground)))
                                     }
                                 }
                                 Column(Modifier.padding(horizontal = 18.dp)) {
                                     if (index == 0) Spacer(Modifier.height(with(LocalDensity.current) { topAppBarHeightPx.toDp() }))
-                                    Spacer(Modifier.height(8.dp))
-                                    if (index == 0 && accountInfo != null && accountShow) {
-                                        AccountLayout(accountInfo?.first ?: "", accountInfo?.second ?: "")
-                                        Spacer(Modifier.height(12.dp))
-                                    }
+                                    Spacer(Modifier.height(6.dp))
                                     if (item.title == stringResource(Res.string.quick_picks)) {
                                         AnimatedVisibility(visible = true) {
                                             QuickPicks(
@@ -435,12 +404,14 @@ fun HomeScreen(
                     else Modifier.hazeEffect(hazeState, style = HazeMaterials.ultraThin()) { blurEnabled = false },
                 ).onGloballyPositioned { topAppBarHeightPx = it.size.height },
             ) {
-                AnimatedVisibility(visible = isScrollingUp, enter = androidx.compose.animation.EnterTransition.None, exit = androidx.compose.animation.ExitTransition.None) { HomeTopAppBar(navController) }
+                AnimatedVisibility(visible = isScrollingUp, enter = androidx.compose.animation.EnterTransition.None, exit = androidx.compose.animation.ExitTransition.None) {
+                    HomeTopAppBar(navController, accountInfo?.first)
+                }
                 AnimatedVisibility(visible = !isScrollingUp, enter = androidx.compose.animation.EnterTransition.None, exit = androidx.compose.animation.ExitTransition.None) {
                     Spacer(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars))
                 }
                 Row(
-                    Modifier.horizontalScroll(chipRowState).padding(vertical = 10.dp, horizontal = 18.dp).background(Color.Transparent),
+                    Modifier.horizontalScroll(chipRowState).padding(vertical = 8.dp, horizontal = 18.dp).background(Color.Transparent),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     listOfHomeChip.forEach { id ->
@@ -471,7 +442,7 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopAppBar(navController: NavController) {
+fun HomeTopAppBar(navController: NavController, accountName: String? = null) {
     val hour = remember { now().time.hour }
     val greeting = when (hour) {
         in 6..12 -> stringResource(Res.string.good_morning)
@@ -483,8 +454,18 @@ fun HomeTopAppBar(navController: NavController) {
         windowInsets = TopAppBarDefaults.windowInsets.exclude(TopAppBarDefaults.windowInsets.only(WindowInsetsSides.Start)),
         title = {
             Column {
-                Text(greeting, style = typo().bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(stringResource(Res.string.app_name), style = typo().headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Text(
+                    stringResource(Res.string.app_name),
+                    style = typo().headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    if (accountName.isNullOrBlank()) greeting else "$greeting, $accountName",
+                    style = typo().bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
         },
         actions = {
@@ -495,26 +476,6 @@ fun HomeTopAppBar(navController: NavController) {
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
     )
-}
-
-@Composable
-fun AccountLayout(accountName: String, url: String) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.32f))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-    ) {
-        Text(stringResource(Res.string.welcome_back), style = typo().bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalPlatformContext.current).data(url).diskCachePolicy(CachePolicy.ENABLED).diskCacheKey(url).crossfade(false).build(),
-                placeholder = rememberHolderPainter(), error = rememberHolderPainter(), contentDescription = null,
-                contentScale = ContentScale.Crop, modifier = Modifier.size(44.dp).clip(CircleShape),
-            )
-            Text(accountName, style = typo().headlineMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(start = 10.dp))
-        }
-    }
 }
 
 @ExperimentalFoundationApi
