@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -372,7 +373,7 @@ fun HomeScreen(
                             }
                         }
                         if (homeListState == ListState.PAGINATION_EXHAUST) {
-                            items(newRelease, key = { it.hashCode() }) { Box(Modifier.padding(horizontal = 18.dp)) { HomeItem(navController, it) } }
+                            items(newRelease, key = { it.hashCode() }) { Box(Modifier.padding(horizontal = 18.dp)) { HomeItem(navController = navController, data = it) } }
                             item { moodMomentAndGenre?.let { Box(Modifier.padding(horizontal = 18.dp)) { MoodMomentAndGenre(it, navController) } } }
                             item {
                                 Column(Modifier.padding(vertical = 10.dp).padding(horizontal = 18.dp)) {
@@ -469,10 +470,10 @@ fun HomeTopAppBar(navController: NavController, accountName: String? = null) {
             }
         },
         actions = {
-            RippleIconButton(SimpIcons.Notifications, MaterialTheme.colorScheme.onBackground) { navController.navigate(NotificationDestination) }
-            RippleIconButton(SimpIcons.History, MaterialTheme.colorScheme.onBackground) { navController.navigate(RecentlySongsDestination) }
+            RippleIconButton(imageVector = SimpIcons.Notifications, tint = MaterialTheme.colorScheme.onBackground) { navController.navigate(NotificationDestination) }
+            RippleIconButton(imageVector = SimpIcons.History, tint = MaterialTheme.colorScheme.onBackground) { navController.navigate(RecentlySongsDestination) }
             ListenTogetherIconButton { navController.navigate(ListenTogetherDestination) }
-            RippleIconButton(SimpIcons.Settings, MaterialTheme.colorScheme.onBackground) { navController.navigate(SettingsDestination) }
+            RippleIconButton(imageVector = SimpIcons.Settings, tint = MaterialTheme.colorScheme.onBackground) { navController.navigate(SettingsDestination) }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
     )
