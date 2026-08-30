@@ -344,7 +344,7 @@ fun HomeScreen(
                         OfflineErrorState(onRetry = onRefresh, onOpenDownloaded = { navController.navigate(LibraryDynamicPlaylistDestination(type = LibraryDynamicPlaylistType.Downloaded.toStringParams())) })
                         return@Crossfade
                     }
-                    LazyColumn(state = scrollState, verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    LazyColumn(state = scrollState, verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         itemsIndexed(homeData, key = { _, item -> item.hashCode().toString() }) { index, item ->
                             Box {
                                 if (index == 0) {
@@ -479,6 +479,34 @@ fun HomeTopAppBar(navController: NavController, accountName: String? = null) {
     )
 }
 
+@Composable
+private fun PgSectionTitle(text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+    ) {
+        Box(
+            Modifier
+                .width(4.dp)
+                .height(26.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.primary),
+        )
+
+        Spacer(Modifier.width(10.dp))
+
+        Text(
+            text = text,
+            style = typo().headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+        )
+    }
+}
+
 @ExperimentalFoundationApi
 @Composable
 fun QuickPicks(homeItem: HomeItem, navController: NavController, viewModel: HomeViewModel = koinViewModel()) {
@@ -491,7 +519,7 @@ fun QuickPicks(homeItem: HomeItem, navController: NavController, viewModel: Home
     if (bottomSheetShow) NowPlayingBottomSheet(onDismiss = { bottomSheetShow = false }, song = track?.toSongEntity(), navController = navController)
     Column(Modifier.padding(vertical = 6.dp).onGloballyPositioned { with(density) { widthDp = it.size.width.toDp() } }) {
         Text(stringResource(Res.string.let_s_start_with_a_radio), style = typo().bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(stringResource(Res.string.quick_picks), style = typo().headlineMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp))
+        PgSectionTitle(stringResource(Res.string.quick_picks))
         LazyHorizontalGrid(rows = GridCells.Fixed(4), modifier = Modifier.height(256.dp), state = lazyListState, flingBehavior = snapperFlingBehavior) {
             items(homeItem.contents, key = { it.hashCode() }) { item ->
                 item?.let {
@@ -516,7 +544,7 @@ fun MoodMomentAndGenre(mood: Mood, navController: NavController) {
         mood.sections.forEach { section ->
             val gridState = rememberLazyGridState()
             val flingBehavior = rememberSnapFlingBehavior(SnapLayoutInfoProvider(lazyGridState = gridState))
-            Text(section.title, style = typo().headlineMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp))
+            PgSectionTitle(section.title)
             LazyHorizontalGrid(rows = GridCells.Fixed(3), modifier = Modifier.height(210.dp), state = gridState, flingBehavior = flingBehavior) {
                 items(section.items, key = { it.params }) { item -> MoodMomentAndGenreHomeItem(item.title, item.stripeColor) { navController.navigate(MoodDestination(item.params)) } }
             }
@@ -528,7 +556,7 @@ fun MoodMomentAndGenre(mood: Mood, navController: NavController) {
 fun ChartTitle() {
     Column {
         Text(stringResource(Res.string.what_is_best_choice_today), style = typo().bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(stringResource(Res.string.chart), style = typo().headlineMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp))
+        PgSectionTitle(stringResource(Res.string.chart))
     }
 }
 
@@ -540,7 +568,7 @@ fun ChartData(chart: Chart, navController: NavController) {
     val snapperFlingBehavior2 = rememberSnapFlingBehavior(SnapLayoutInfoProvider(lazyGridState = lazyListState2))
     Column(Modifier.onGloballyPositioned { with(density) { gridWidthDp = it.size.width.toDp() } }) {
         chart.listChartItem.forEach { item ->
-            Text(item.title, style = typo().headlineMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp))
+            PgSectionTitle(item.title)
             val lazyListState = rememberLazyListState()
             val snapperFlingBehavior = rememberSnapFlingBehavior(SnapLayoutInfoProvider(lazyListState = lazyListState))
             LazyRow(flingBehavior = snapperFlingBehavior) {
@@ -549,7 +577,7 @@ fun ChartData(chart: Chart, navController: NavController) {
                 }
             }
         }
-        Text(stringResource(Res.string.top_artists), style = typo().headlineMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp))
+        PgSectionTitle(stringResource(Res.string.top_artists))
         LazyHorizontalGrid(rows = GridCells.Fixed(3), modifier = Modifier.height(240.dp), state = lazyListState2, flingBehavior = snapperFlingBehavior2) {
             items(chart.artists.itemArtists.size, key = { index -> val item = chart.artists.itemArtists[index]; item.title + item.browseId + index }) { index ->
                 val data = chart.artists.itemArtists[index]
