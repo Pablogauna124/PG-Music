@@ -376,7 +376,7 @@ fun LocalPlaylistScreen(
         shouldHideTopBar = !firstItemVisible
     }
     val paletteState = rememberPaletteState()
-    val hazeState = rememberHazeState(blurEnabled = true)
+    val hazeState = rememberHazeState(blurEnabled = false)
     var bitmap by remember {
         mutableStateOf<ImageBitmap?>(null)
     }
@@ -768,7 +768,7 @@ fun LocalPlaylistScreen(
                                             modifier =
                                                 Modifier
                                                     .size(280.dp)
-                                                    .clip(RoundedCornerShape(8.dp)),
+                                                    .clip(RoundedCornerShape(14.dp)),
                                         )
                                         Column(
                                             modifier = Modifier.weight(1f),
@@ -1471,7 +1471,7 @@ fun LocalPlaylistScreen(
             onOpenActions = { showSelectionSheet = true },
             modifier =
                 Modifier.hazeEffect(hazeState) {
-                    blurEnabled = true
+                    blurEnabled = false
                     blurRadius = 24.dp
                     backgroundColor = mutedPaletteBg
                     tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
@@ -1649,7 +1649,7 @@ fun LocalPlaylistScreen(
                 Modifier
                     .fillMaxWidth()
                     .hazeEffect(hazeState) {
-                        blurEnabled = true
+                        blurEnabled = false
                         blurRadius = 24.dp
                         backgroundColor = mutedPaletteBg
                         tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
@@ -1778,7 +1778,7 @@ fun LocalPlaylistScreen(
                 ),
             modifier =
                 Modifier.hazeEffect(hazeState) {
-                    blurEnabled = true
+                    blurEnabled = false
                     blurRadius = 24.dp
                     backgroundColor = mutedPaletteBg
                     tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))

@@ -134,7 +134,7 @@ fun LibraryDynamicPlaylistScreen(
     var tempTopAlbums by remember { mutableStateOf(analyticsUIState.topAlbums.data ?: emptyList()) }
     val hazeState =
         rememberHazeState(
-            blurEnabled = true,
+            blurEnabled = false,
         )
 
     LaunchedEffect(query) {
@@ -574,7 +574,7 @@ fun LibraryDynamicPlaylistScreen(
                 modifier =
                     Modifier
                         .hazeEffect(hazeState, style = HazeMaterials.ultraThin()) {
-                            blurEnabled = true
+                            blurEnabled = false
                         },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
