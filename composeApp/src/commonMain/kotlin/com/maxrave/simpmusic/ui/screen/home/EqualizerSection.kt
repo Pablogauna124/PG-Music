@@ -114,7 +114,7 @@ fun EqualizerSection(viewModel: SettingsViewModel = koinViewModel()) {
     // the reset button read as three unrelated rows in the list.
     Surface(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -135,7 +135,7 @@ fun EqualizerSection(viewModel: SettingsViewModel = koinViewModel()) {
                 Row(
                     modifier =
                         Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .clickable { presetMenuOpen = true }
                             .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,

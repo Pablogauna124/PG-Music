@@ -83,7 +83,7 @@ fun AutoEqPicker(
         Row(
             modifier =
                 Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .clickable { open = true }
                     .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
