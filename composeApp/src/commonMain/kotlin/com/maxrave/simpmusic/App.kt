@@ -734,7 +734,7 @@ fun App(viewModel: SharedViewModel = koinInject()) {
                                 onClick = {
                                     shouldShowUpdateDialog = false
                                     viewModel.showedUpdateDialog = false
-                                    openUrl("https://simpmusic.org/download")
+                                    // PG Music: descarga de SimpMusic deshabilitada
                                 },
                             ) {
                                 Text(

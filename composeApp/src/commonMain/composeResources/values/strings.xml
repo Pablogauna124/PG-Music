@@ -520,7 +520,7 @@
     <string name="backup_downloaded">Backup downloaded data</string>
     <string name="backup_downloaded_description">Backup all downloaded songs's data</string>
     <string name="auto_backup">Auto backup</string>
-    <string name="auto_backup_description">Automatically backup your data to Downloads/SimpMusic folder</string>
+    <string name="auto_backup_description">Automatically backup your data to Downloads/PG Music folder</string>
     <string name="backup_frequency">Backup frequency</string>
     <string name="daily">Daily</string>
     <string name="weekly">Weekly</string>

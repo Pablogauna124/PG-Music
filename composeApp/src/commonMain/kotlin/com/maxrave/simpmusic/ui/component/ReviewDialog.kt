@@ -40,7 +40,7 @@ fun ReviewDialog(
         confirmButton = {
             TextButton(onClick = {
                 onDoneReview.invoke()
-                uriHandler.openUri("https://github.com/maxrave-dev/SimpMusic")
+                // PG Music: review de SimpMusic deshabilitada
             }) {
                 Text(
                     stringResource(Res.string.give_a_star),
@@ -78,7 +78,7 @@ fun ReviewDialog(
                         ) {
                             onDoneReview.invoke()
                             onDismissRequest.invoke()
-                            uriHandler.openUri("https://www.producthunt.com/products/simpmusic")
+                            // PG Music: Product Hunt de SimpMusic deshabilitado
                         },
                     ) {
                         append(" ProductHunt")
@@ -92,7 +92,7 @@ fun ReviewDialog(
                         ) {
                             onDoneReview.invoke()
                             onDismissRequest.invoke()
-                            uriHandler.openUri("https://buymeacoffee.com/maxrave")
+                            // PG Music: promoción externa deshabilitada
                         },
                     ) {
                         append(stringResource(Res.string.buying_me_a_coffee))

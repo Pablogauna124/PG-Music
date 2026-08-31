@@ -124,10 +124,10 @@
     <string name="maxrave_dev">maxrave-dev</string>
     <string name="buy_me_a_coffee">Cómprame un café</string>
     <string name="developer_blog"></string>
-    <string name="developer_blog_tagline">Leer notas de desarrollo, tutoriales &amp; detrás de la escena</string>
-    <string name="blog_promo_title">Algo nuevo del desarrollador</string>
-    <string name="blog_promo_message">Acabo de lanzar mi blog personal en maxrave.dev — compartiendo la historia detrás de SimpMusic, inmersiones profundas de tecnología musical y notas de ingeniería. Dale un vistazo si eres curioso ✨</string>
-    <string name="visit_blog">Visita el blog</string>
+    <string name="developer_blog_tagline">Información y novedades de PG Music</string>
+    <string name="blog_promo_title">Novedades de PG Music</string>
+    <string name="blog_promo_message">Novedades y mejoras de PG Music</string>
+    <string name="visit_blog">Cerrar</string>
     <string name="paypal">PayPal</string>
     <string name="title">Título</string>
     <string name="custom_order">Orden personalizado</string>
@@ -205,8 +205,8 @@
     <string name="skip_sponsor_part_of_video">Omitir patrocinadores en el vídeo</string>
     <string name="customactivityoncrash_error_activity_error_occurred_explanation">Se ha producido un error inesperado. Disculpa las molestias.</string>
     <string name="customactivityoncrash_error_activity_restart_app">Reiniciar app</string>
-    <string name="help_build_lyrics_database">Ayuda a SimpMusic a contruir la base de datos de letras</string>
-    <string name="help_build_lyrics_database_description">Envía tus letras guardadas a la base de datos de letras de SimpMusic</string>
+    <string name="help_build_lyrics_database">Ayuda a mejorar la base de datos de letras</string>
+    <string name="help_build_lyrics_database_description">Envía tus letras guardadas para ayudar a mejorar la base de datos de letras</string>
     <string name="customactivityoncrash_error_activity_close_app">Cerrar app</string>
     <string name="customactivityoncrash_error_activity_error_details">Detalles del error</string>
     <string name="customactivityoncrash_error_activity_error_details_title">Detalles del error</string>
@@ -278,7 +278,7 @@
     <string name="older_first">Primero antiguo</string>
     <string name="newer_first">Primero nuevo</string>
     <string name="added_date">Fecha añadida</string>
-    <string name="credit_app">Una aplicación de música sencilla que utiliza YouTube Music como backend \n\nSimpMusic es un proyecto de código abierto para transmitir música desde YouTube y YouTube Music sin anuncios ni seguimiento. SimpMusic ofrece muchas funciones:\n\n - Transmisión de música \n - Letras sincronizadas\n - Personalizar datos\n - etc... \n\nSimpMusic es siempre gratuito y sin anuncios\n\nCompilado con ❤️ de Tuan Minh Nguyen Duc (maxrave-dev)</string>
+    <string name="credit_app">PG Music es una aplicación de música basada en el proyecto de código abierto SimpMusic.\n\nProyecto original: SimpMusic\nDesarrollador original: Tuan Minh Nguyen Duc (maxrave-dev)\n\nPG Music mantiene y adapta esta base para ofrecer su propia experiencia, identidad y sistema de distribución.</string>
     <string name="issue_tracker">Rastreador de errores</string>
     <string name="featured_playlists">Listas de reproducción destacadas</string>
     <string name="featured_inArtist">Destacado en</string>
@@ -477,7 +477,7 @@
     <string name="backup_downloaded">Respaldar datos descargados</string>
     <string name="backup_downloaded_description">Respaldar todos los datos de canciones descargadas</string>
     <string name="auto_backup">Copia de seguridad automática</string>
-    <string name="auto_backup_description">Realiza una copia de seguridad automática de tus datos en la carpeta Descargas/SimpMusic</string>
+    <string name="auto_backup_description">Realiza una copia de seguridad automática de tus datos en la carpeta Descargas/PG Music</string>
     <string name="backup_frequency">Frecuencia de copias de seguridad</string>
     <string name="daily">Diariamente</string>
     <string name="weekly">Semanalmente</string>
@@ -561,7 +561,7 @@
     <string name="local_tracking_description">Registra tu historial de escucha en la base de datos local</string>
     <string name="blog_notification_title">Notificaciones de publicaciones del blog</string>
     <string name="blog_notification_description">Recibe una notificación cuando se publique una nueva entrada del blog</string>
-    <string name="simpmusic_charts">Gráficos SimpMusic</string>
+    <string name="simpmusic_charts">Listas de PG Music</string>
     <string name="crossfading">Crossfade</string>
     <string name="your_320kbps_url">Su URL de 320kbps</string>
     <string name="your_320kbps_url_description">Dejar en blanco para elegir automáticamente una URL funcional desde la comprobación de tiempo de activación.</string>
@@ -576,11 +576,11 @@
     <string name="playing_on_device">Reproduciendo en %1$s</string>
     <string name="not_available_while_casting">No disponible durante la transmisión</string>
     <string name="import_data">Importar listas de reproducción</string>
-    <string name="import_playlists_from_other_apps">Importa listas de reproducción convertidas de Spotify u otra aplicación cliente de YT Music. Utiliza solamente nuestro formato. Comprueba la herramienta de conversión en: https://www.simpmusic.org/tools</string>
+    <string name="import_playlists_from_other_apps">Importa listas de reproducción compatibles desde otras aplicaciones de música.</string>
     <string name="import_reading_file">Leyendo archivo…</string>
     <string name="import_progress_songs">%1$d de %2$d canciones</string>
     <string name="import_result">Creadas %1$d listas de reproducción e importadas %2$d canciones.</string>
     <string name="import_result_skipped">Se omitieron %1$d entradas porque su canción no estaba en el archivo.</string>
     <string name="import_failed">Error en la importación</string>
-    <string name="import_invalid_file">Este archivo no es un archivo de importación válido de SimpMusic. Convierte tu biblioteca en simpmusic.org primero.</string>
+    <string name="import_invalid_file">Este archivo no es un archivo de importación válido para PG Music.</string>
 </resources>

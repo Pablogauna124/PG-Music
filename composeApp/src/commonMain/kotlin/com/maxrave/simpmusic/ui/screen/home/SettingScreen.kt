@@ -2430,7 +2430,7 @@ fun SettingScreen(
                     title = stringResource(Res.string.developer_blog),
                     subtitle = stringResource(Res.string.developer_blog_tagline),
                     onClick = {
-                        uriHandler.openUri("https://maxrave.dev")
+                        /* PG Music: blog promocional heredado deshabilitado */
                     },
                 )
                 if (getPlatform() == Platform.Android) {

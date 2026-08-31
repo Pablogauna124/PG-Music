@@ -38,7 +38,7 @@ fun BlogPromoDialog(
         confirmButton = {
             TextButton(onClick = {
                 onVisitBlog.invoke()
-                uriHandler.openUri("https://maxrave.dev")
+                // PG Music: promoción externa deshabilitada
             }) {
                 Text(
                     stringResource(Res.string.visit_blog),
