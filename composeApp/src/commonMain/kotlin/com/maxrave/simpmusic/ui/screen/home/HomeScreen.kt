@@ -90,7 +90,6 @@ import com.maxrave.simpmusic.extension.angledGradientBackground
 import com.maxrave.simpmusic.extension.artworkScrimBrush
 import com.maxrave.simpmusic.extension.isScrollingUp
 import com.maxrave.simpmusic.getPlatform
-import com.maxrave.simpmusic.ui.component.BlogPromoDialog
 import com.maxrave.simpmusic.ui.component.CenterLoadingBox
 import com.maxrave.simpmusic.ui.component.Chip
 import com.maxrave.simpmusic.ui.component.DropdownButton
@@ -104,7 +103,6 @@ import com.maxrave.simpmusic.ui.component.MoodMomentAndGenreHomeItem
 import com.maxrave.simpmusic.ui.component.NowPlayingBottomSheet
 import com.maxrave.simpmusic.ui.component.OfflineErrorState
 import com.maxrave.simpmusic.ui.component.QuickPicksItem
-import com.maxrave.simpmusic.ui.component.ReviewDialog
 import com.maxrave.simpmusic.ui.component.RippleIconButton
 import com.maxrave.simpmusic.ui.component.ShareSavedLyricsDialog
 import com.maxrave.simpmusic.ui.icon.History
@@ -175,7 +173,6 @@ import simpmusic.composeapp.generated.resources.warning
 import simpmusic.composeapp.generated.resources.what_is_best_choice_today
 import simpmusic.composeapp.generated.resources.workout
 
-private const val BLOG_PROMO_KEY = "blog_promo_v1_seen"
 
 private val listOfHomeChip =
     listOf(
@@ -223,9 +220,7 @@ fun HomeScreen(
         } else backgroundColor
     val heroAccentColor = MaterialTheme.colorScheme.primaryContainer
 
-    var showReviewDialog by rememberSaveable { mutableStateOf(false) }
     var showRequestShareLyricsPermissions by rememberSaveable { mutableStateOf(false) }
-    var showBlogPromoDialog by rememberSaveable { mutableStateOf(false) }
     var topAppBarHeightPx by rememberSaveable { mutableIntStateOf(0) }
     val hazeState = rememberHazeState(blurEnabled = false)
 
@@ -255,14 +250,12 @@ fun HomeScreen(
         }
     }
     LaunchedEffect(openAppTime, shareLyricsPermissions) {
-        if (openAppTime >= 10 && openAppTime % 10 == 0 && openAppTime <= 50) {
-            showReviewDialog = true
-        } else if ((openAppTime == 1 || openAppTime % 15 == 0) && openAppTime <= 60 && !shareLyricsPermissions) {
+        if ((openAppTime == 1 || openAppTime % 15 == 0) &&
+            openAppTime <= 60 &&
+            !shareLyricsPermissions
+        ) {
             showRequestShareLyricsPermissions = true
-        } else if (openAppTime == 5 && sharedViewModel.getString(BLOG_PROMO_KEY) != "true") {
-            showBlogPromoDialog = true
         } else {
-            showReviewDialog = false
             showRequestShareLyricsPermissions = false
         }
     }
@@ -279,18 +272,6 @@ fun HomeScreen(
         }
     }
 
-    if (showReviewDialog) {
-        ReviewDialog(
-            onDismissRequest = { sharedViewModel.onDoneReview(true); showReviewDialog = false },
-            onDoneReview = { sharedViewModel.onDoneReview(false); showReviewDialog = false },
-        )
-    }
-    if (showBlogPromoDialog) {
-        BlogPromoDialog(
-            onDismissRequest = { sharedViewModel.putString(BLOG_PROMO_KEY, "true"); showBlogPromoDialog = false },
-            onVisitBlog = { sharedViewModel.putString(BLOG_PROMO_KEY, "true"); showBlogPromoDialog = false },
-        )
-    }
     if (showRequestShareLyricsPermissions) {
         ShareSavedLyricsDialog(
             onDismissRequest = { showRequestShareLyricsPermissions = false; sharedViewModel.onDoneReview(true) },

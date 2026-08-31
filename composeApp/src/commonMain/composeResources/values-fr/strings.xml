@@ -125,8 +125,6 @@
     <string name="buy_me_a_coffee">Offrez-moi un café ! ☕</string>
     <string name="developer_blog">Blog des Développeurs</string>
     <string name="developer_blog_tagline">Consultez les notes des développeurs, les tutoriels &amp; les coulisses</string>
-    <string name="blog_promo_title">Une nouveauté du développeur</string>
-    <string name="blog_promo_message">Je viens de lancer mon blog personnel sur maxrave.dev — j'y partage l'histoire de SimpMusic, des analyses approfondies sur les technologies musicales et des notes d'ingénierie. N'hésitez pas à y jeter un œil si ça vous intéresse. ✨</string>
     <string name="visit_blog">Consultez le blog</string>
     <string name="paypal">PayPal</string>
     <string name="title">Titre</string>

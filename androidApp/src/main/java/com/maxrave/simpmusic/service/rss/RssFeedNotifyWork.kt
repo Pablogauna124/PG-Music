@@ -36,7 +36,13 @@ class RssFeedNotifyWork(
     KoinComponent {
     private val commonRepository: CommonRepository by inject()
 
-    override suspend fun doWork(): Result =
+    override suspend fun doWork(): Result {
+        // PG Music no utiliza el RSS promocional heredado de SimpMusic.
+        return Result.success()
+    }
+
+    /*
+    private suspend fun legacyDoWork(): Result =
         withContext(Dispatchers.IO) {
             try {
                 Logger.w(TAG, "doWork: fetching $FEED_URL")
@@ -143,6 +149,8 @@ class RssFeedNotifyWork(
         val description: String,
         val pubMillis: Long,
     )
+
+    */
 
     companion object {
         private const val TAG = "RssFeedNotifyWork"
