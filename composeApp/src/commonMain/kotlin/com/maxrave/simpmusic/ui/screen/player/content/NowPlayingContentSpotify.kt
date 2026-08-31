@@ -1171,7 +1171,9 @@ fun NowPlayingContentSpotify(
                                         )
                                         // Control Button Layout
                                         PlayerControlLayout(
-                                            state.controllerState,
+                                            controllerState = state.controllerState,
+                                            activeColor = Color(0xFFFF1744),
+                                            contentColor = Color.White,
                                         ) {
                                             actions.onUIEvent(it)
                                         }
@@ -1872,7 +1874,7 @@ private fun NowPlayingTrackInfoRow(
                         .data(state.screenData.thumbnailURL)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(state.screenData.thumbnailURL + "BIGGER")
-                        .crossfade(true)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(),
                 error = rememberHolderPainter(),
@@ -1884,7 +1886,7 @@ private fun NowPlayingTrackInfoRow(
                         .width(55.dp)
                         .padding(end = 10.dp)
                         .clip(
-                            RoundedCornerShape(4.dp),
+                            RoundedCornerShape(12.dp),
                         ).align(Alignment.CenterVertically),
             )
         }
@@ -1892,17 +1894,14 @@ private fun NowPlayingTrackInfoRow(
         Column(Modifier.weight(1f)) {
             Text(
                 text = state.screenData.nowPlayingTitle,
-                style = typo().titleMedium,
+                style = typo().titleLarge,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 color = Color.White,
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .wrapContentHeight(align = Alignment.CenterVertically)
-                        .basicMarquee(
-                            iterations = Int.MAX_VALUE,
-                            animationMode = MarqueeAnimationMode.Immediately,
-                        ).focusable(),
+                        .wrapContentHeight(align = Alignment.CenterVertically),
             )
             Spacer(modifier = Modifier.height(3.dp))
             LazyRow(
@@ -1925,14 +1924,12 @@ private fun NowPlayingTrackInfoRow(
                         text = state.screenData.artistName,
                         style = typo().bodyMedium,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = Color.White.copy(alpha = 0.68f),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .wrapContentHeight(align = Alignment.CenterVertically)
-                                .basicMarquee(
-                                    iterations = Int.MAX_VALUE,
-                                    animationMode = MarqueeAnimationMode.Immediately,
-                                ).focusable()
                                 .clickable {
                                     actions.onNavigateToArtist()
                                 },
@@ -1949,7 +1946,7 @@ private fun NowPlayingTrackInfoRow(
                     IconButton(
                         modifier =
                             Modifier
-                                .size(24.dp)
+                                .size(32.dp)
                                 .aspectRatio(1f)
                                 .clip(
                                     CircleShape,
@@ -1958,13 +1955,17 @@ private fun NowPlayingTrackInfoRow(
                             actions.onAddToYouTubeLiked()
                         },
                     ) {
-                        Icon(imageVector = SimpIcons.CheckCircle, tint = Color.White, contentDescription = "")
+                        Icon(
+                            imageVector = SimpIcons.CheckCircle,
+                            tint = Color(0xFFFF1744),
+                            contentDescription = "",
+                        )
                     }
                 } else {
                     IconButton(
                         modifier =
                             Modifier
-                                .size(24.dp)
+                                .size(32.dp)
                                 .aspectRatio(1f)
                                 .clip(
                                     CircleShape,
