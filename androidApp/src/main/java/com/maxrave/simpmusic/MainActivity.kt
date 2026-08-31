@@ -308,9 +308,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkForUpdate() {
-        if (viewModel.shouldCheckForUpdate()) {
-            viewModel.checkForUpdate()
-        }
+        // PG Music gestiona sus propias actualizaciones.
+        // Nunca consultar automáticamente las releases de SimpMusic.
+        return
     }
 
     private fun putString(

@@ -965,45 +965,11 @@ class SharedViewModel(
     val updateResponse: StateFlow<UpdateData?> = _updateResponse
 
     fun checkForUpdate() {
-        viewModelScope.launch {
-            _isCheckingUpdate.value = true
-            val updateChannel = dataStoreManager.updateChannel.first()
-            dataStoreManager.putString(
-                "CheckForUpdateAt",
-                System.currentTimeMillis().toString(),
-            )
-            if (updateChannel == DataStoreManager.GITHUB) {
-                updateRepository.checkForGithubReleaseUpdate().collectLatest { response ->
-                    val data = response.data
-                    when (response) {
-                        is Resource.Success if (data != null) -> {
-                            _updateResponse.value = data
-                            showedUpdateDialog = true
-                        }
-
-                        else -> {
-                            log("Check for update error: ${response.message}", LogLevel.WARN)
-                        }
-                    }
-                    _isCheckingUpdate.value = false
-                }
-            } else if (updateChannel == DataStoreManager.FDROID) {
-                updateRepository.checkForFdroidUpdate().collectLatest { response ->
-                    val data = response.data
-                    when (response) {
-                        is Resource.Success if (data != null) -> {
-                            _updateResponse.value = data
-                            showedUpdateDialog = true
-                        }
-
-                        else -> {
-                            log("Check for update error: ${response.message}", LogLevel.WARN)
-                        }
-                    }
-                    _isCheckingUpdate.value = false
-                }
-            }
-        }
+        // PG Music no consulta actualizaciones de SimpMusic ni F-Droid.
+        // Este punto queda reservado para el futuro actualizador propio de PG Music.
+        _isCheckingUpdate.value = false
+        _updateResponse.value = null
+        showedUpdateDialog = false
     }
 
     fun stopPlayer() {
