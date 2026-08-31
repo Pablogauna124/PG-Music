@@ -211,9 +211,9 @@ fun ArtistScreen(
 
     // Accent color for the action buttons, sourced from the artist name-logo image's dominant
     // color (hidden catalog). Falls back to white until the logo loads (or if none exists).
-    val artistAccent = artistLogo?.bgColorHex?.hexToColorOrNull() ?: Color.White
+    val artistAccent = Color(0xFFFF1744)
 
-    val hazeState = rememberHazeState(blurEnabled = true)
+    val hazeState = rememberHazeState(blurEnabled = false)
     val lazyState = rememberLazyListState()
     val firstItemVisible by remember {
         derivedStateOf { lazyState.firstVisibleItemIndex == 0 }
@@ -257,7 +257,7 @@ fun ArtistScreen(
                                 // (not a child) to avoid render feedback loop / RuntimeShader crash.
                                 val artworkBackdrop = rememberBackdrop(Color.Black)
                                 // Haze state for the bottom progressive-blur fade (source = media layer).
-                                val headerHaze = rememberHazeState(blurEnabled = true)
+                                val headerHaze = rememberHazeState(blurEnabled = false)
                                 // Clamp the artist thumbnail URL to a square size (logic from
                                 // commit 5e596c5b) so it fills the square frame with FillWidth.
                                 val headerImageUrl = state.data.imageUrl?.toSquareThumbnailUrl()
@@ -593,7 +593,7 @@ fun ArtistScreen(
                                 ),
                             modifier =
                                 Modifier.hazeEffect(hazeState) {
-                                    blurEnabled = true
+                                    blurEnabled = false
                                     blurRadius = 24.dp
                                     backgroundColor = mutedPaletteBg
                                     tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
@@ -1122,7 +1122,7 @@ private fun ArtistSections(
         val urlHandler = LocalUriHandler.current
         ElevatedCard(
             modifier = Modifier.padding(horizontal = 20.dp),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(16.dp),
             colors =
                 CardDefaults.elevatedCardColors().copy(
                     containerColor = descriptionTint.rgbFactor(0.5f),

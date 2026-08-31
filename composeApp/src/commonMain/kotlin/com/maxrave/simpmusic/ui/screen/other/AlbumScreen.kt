@@ -189,7 +189,7 @@ fun AlbumScreen(
     val paletteState = rememberPaletteState()
     val hazeState =
         rememberHazeState(
-            blurEnabled = true,
+            blurEnabled = false,
         )
     var bitmap by remember {
         mutableStateOf<ImageBitmap?>(null)
@@ -504,7 +504,7 @@ fun AlbumScreen(
                                                                     Modifier
                                                                         .size(48.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(Color.White.copy(alpha = 0.12f))
+                                                                        .background(Color(0xFF2A080D))
                                                                         .clickable { viewModel.shuffle() },
                                                                 contentAlignment = Alignment.Center,
                                                             ) {
@@ -521,7 +521,7 @@ fun AlbumScreen(
                                                                         .height(48.dp)
                                                                         .widthIn(min = 110.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(Color.White)
+                                                                        .background(Color(0xFFFF1744))
                                                                         .clickable {
                                                                             if (isThisPlaying) {
                                                                                 sharedViewModel.onUIEvent(UIEvent.PlayPause)
@@ -538,13 +538,13 @@ fun AlbumScreen(
                                                                         imageVector =
                                                                             if (isThisPlaying) SimpIcons.Pause else SimpIcons.PlayArrow,
                                                                         contentDescription = null,
-                                                                        tint = Color.Black,
+                                                                        tint = Color.White,
                                                                         modifier = Modifier.size(22.dp),
                                                                     )
                                                                     Spacer(modifier = Modifier.width(4.dp))
                                                                     Text(
                                                                         text = if (isThisPlaying) "Pause" else "Play",
-                                                                        color = Color.Black,
+                                                                        color = Color.White,
                                                                         style = typo().labelLarge,
                                                                     )
                                                                 }
@@ -554,7 +554,7 @@ fun AlbumScreen(
                                                                     Modifier
                                                                         .size(48.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(Color.White.copy(alpha = 0.12f)),
+                                                                        .background(Color(0xFF2A080D)),
                                                                 contentAlignment = Alignment.Center,
                                                             ) {
                                                                 Crossfade(targetState = uiState.downloadState) { state ->
@@ -714,7 +714,7 @@ fun AlbumScreen(
                                                             Modifier
                                                                 .size(48.dp)
                                                                 .clip(CircleShape)
-                                                                .background(Color.White.copy(alpha = 0.12f))
+                                                                .background(Color(0xFF2A080D))
                                                                 .clickable { viewModel.shuffle() },
                                                         contentAlignment = Alignment.Center,
                                                     ) {
@@ -731,7 +731,7 @@ fun AlbumScreen(
                                                                 .height(48.dp)
                                                                 .widthIn(min = 110.dp)
                                                                 .clip(CircleShape)
-                                                                .background(Color.White)
+                                                                .background(Color(0xFFFF1744))
                                                                 .clickable {
                                                                     if (isThisPlaying) {
                                                                         sharedViewModel.onUIEvent(UIEvent.PlayPause)
@@ -748,13 +748,13 @@ fun AlbumScreen(
                                                                 imageVector =
                                                                     if (isThisPlaying) SimpIcons.Pause else SimpIcons.PlayArrow,
                                                                 contentDescription = null,
-                                                                tint = Color.Black,
+                                                                tint = Color.White,
                                                                 modifier = Modifier.size(22.dp),
                                                             )
                                                             Spacer(modifier = Modifier.width(4.dp))
                                                             Text(
                                                                 text = if (isThisPlaying) "Pause" else "Play",
-                                                                color = Color.Black,
+                                                                color = Color.White,
                                                                 style = typo().labelLarge,
                                                             )
                                                         }
@@ -764,7 +764,7 @@ fun AlbumScreen(
                                                             Modifier
                                                                 .size(48.dp)
                                                                 .clip(CircleShape)
-                                                                .background(Color.White.copy(alpha = 0.12f)),
+                                                                .background(Color(0xFF2A080D)),
                                                         contentAlignment = Alignment.Center,
                                                     ) {
                                                         Crossfade(targetState = uiState.downloadState) { state ->
@@ -990,7 +990,7 @@ fun AlbumScreen(
                             ),
                         modifier =
                             Modifier.hazeEffect(hazeState) {
-                                blurEnabled = true
+                                blurEnabled = false
                                 blurRadius = 24.dp
                                 backgroundColor = mutedPaletteBg
                                 tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
@@ -1010,7 +1010,7 @@ fun AlbumScreen(
                         onOpenActions = { showSelectionSheet = true },
                         modifier =
                             Modifier.hazeEffect(hazeState) {
-                                blurEnabled = true
+                                blurEnabled = false
                                 blurRadius = 24.dp
                                 backgroundColor = mutedPaletteBg
                                 tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
