@@ -473,7 +473,7 @@ fun LibraryScreen(
                             ImageRequest
                                 .Builder(LocalPlatformContext.current)
                                 .data(accountThumbnail)
-                                .crossfade(550)
+                                .crossfade(false)
                                 .build(),
                         placeholder = rememberVectorPainter(SimpIcons.PeopleAlt),
                         error = rememberVectorPainter(SimpIcons.PeopleAlt),
