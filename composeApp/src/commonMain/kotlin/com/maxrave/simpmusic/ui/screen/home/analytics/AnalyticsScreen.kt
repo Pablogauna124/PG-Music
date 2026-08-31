@@ -722,7 +722,7 @@ private fun LandscapeHeader(
             ArtworkImage(
                 url = topTrack.second.thumbnails,
                 onBitmap = onBitmap,
-                modifier = Modifier.size(LANDSCAPE_ARTWORK).clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier.size(LANDSCAPE_ARTWORK).clip(RoundedCornerShape(14.dp)),
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -772,7 +772,7 @@ private fun ArtworkImage(
                 .data(url)
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .diskCacheKey(url ?: "")
-                .crossfade(550)
+                .crossfade(false)
                 .build(),
         contentDescription = "",
         contentScale = ContentScale.Crop,
