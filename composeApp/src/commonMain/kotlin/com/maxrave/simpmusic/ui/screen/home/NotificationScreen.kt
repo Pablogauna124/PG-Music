@@ -102,7 +102,7 @@ fun NotificationScreen(
     val glowNowPlaying by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val density = LocalDensity.current
-    val hazeState = rememberHazeState(blurEnabled = true)
+    val hazeState = rememberHazeState(blurEnabled = false)
     var topAppBarHeight by remember { mutableStateOf(0.dp) }
     // Home's rule: transparent only while pixel-0 is on screen; the frost itself stays light.
     val isAtTop by remember {
@@ -188,7 +188,7 @@ fun NotificationScreen(
                     } else {
                         // AlbumScreen's bar recipe, thinned to 0.3 — see SettingScreen.
                         Modifier.hazeEffect(hazeState) {
-                            blurEnabled = true
+                            blurEnabled = false
                             blurRadius = 24.dp
                             backgroundColor = barTint
                             tints = listOf(HazeTint(barTint.copy(alpha = 0.3f)))
@@ -257,7 +257,7 @@ fun NotificationItem(
                             .data(thumb)
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .diskCacheKey(thumb)
-                            .crossfade(true)
+                            .crossfade(false)
                             .build(),
                     placeholder = rememberHolderPainter(),
                     error = rememberHolderPainter(),
@@ -402,7 +402,7 @@ fun ItemAlbumNotification(
                         .data(thumbnail)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumbnail)
-                        .crossfade(true)
+                        .crossfade(false)
                         .build(),
                 placeholder = rememberHolderPainter(),
                 error = rememberHolderPainter(),
@@ -413,7 +413,7 @@ fun ItemAlbumNotification(
                         .align(Alignment.CenterHorizontally)
                         .size(150.dp)
                         .clip(
-                            RoundedCornerShape(10),
+                            RoundedCornerShape(14.dp),
                         ),
             )
             Text(

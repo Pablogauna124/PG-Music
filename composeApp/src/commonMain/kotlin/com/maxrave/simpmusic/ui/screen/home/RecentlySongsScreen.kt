@@ -75,7 +75,7 @@ fun RecentlySongsScreen(
     viewModel: RecentlySongsViewModel = koinViewModel(),
     sharedViewModel: SharedViewModel = koinInject(),
 ) {
-    val hazeState = rememberHazeState()
+    val hazeState = rememberHazeState(blurEnabled = false)
 
     val selectionState = rememberSongSelectionState()
     val selectionViewModel: SongSelectionViewModel = koinViewModel()
@@ -235,7 +235,7 @@ fun RecentlySongsScreen(
                 Modifier
                     .align(Alignment.TopCenter)
                     .hazeEffect(state = hazeState, style = HazeMaterials.ultraThin()) {
-                        blurEnabled = true
+                        blurEnabled = false
                     },
             title = {
                 Text(

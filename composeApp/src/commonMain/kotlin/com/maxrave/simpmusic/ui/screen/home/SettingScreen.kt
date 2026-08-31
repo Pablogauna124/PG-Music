@@ -546,7 +546,7 @@ fun SettingScreen(
 
     val hazeState =
         rememberHazeState(
-            blurEnabled = true,
+            blurEnabled = false,
         )
 
     val checkForUpdateSubtitle by remember {
@@ -3074,7 +3074,7 @@ fun SettingScreen(
                             // tint stacked on this page's dark ground read as a solid lid. 0.3 keeps
                             // the blur doing the work and the tint only settling legibility.
                             Modifier.hazeEffect(hazeState) {
-                                blurEnabled = true
+                                blurEnabled = false
                                 blurRadius = 24.dp
                                 backgroundColor = settingBarTint
                                 tints = listOf(HazeTint(settingBarTint.copy(alpha = 0.3f)))
