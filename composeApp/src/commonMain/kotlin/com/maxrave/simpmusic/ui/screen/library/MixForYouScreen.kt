@@ -84,7 +84,7 @@ fun MixForYouScreen(
 ) {
     val density = LocalDensity.current
     val mixForYou by viewModel.youTubeMixForYou.collectAsStateWithLifecycle()
-    val hazeState = rememberHazeState(blurEnabled = true)
+    val hazeState = rememberHazeState(blurEnabled = false)
     val gridState = rememberLazyGridState()
     // Home's rule, verbatim: transparent only while pixel-0 is on screen. onScrolling is too
     // coarse for this — it stays "on top" through the whole first row. The frost itself is kept
@@ -190,7 +190,7 @@ fun MixForYouScreen(
                     } else {
                         // AlbumScreen's bar recipe, thinned to 0.3 — see SettingScreen.
                         Modifier.hazeEffect(hazeState) {
-                            blurEnabled = true
+                            blurEnabled = false
                             blurRadius = 24.dp
                             // `this.` is load-bearing: this function has a local
                             // `val backgroundColor` for the glow machinery, and Kotlin resolves

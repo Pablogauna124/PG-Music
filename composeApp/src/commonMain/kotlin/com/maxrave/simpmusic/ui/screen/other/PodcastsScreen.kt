@@ -185,7 +185,7 @@ fun PodcastScreen(
                                         Modifier
                                             .fillMaxWidth()
                                             .height(260.dp)
-                                            .clip(RoundedCornerShape(8.dp))
+                                            .clip(RoundedCornerShape(14.dp))
                                             .angledGradientBackground(gradientColors, 25f),
                                 )
                                 Box(
@@ -223,7 +223,7 @@ fun PodcastScreen(
                                                 .data(data.thumbnail.lastOrNull()?.url)
                                                 .diskCachePolicy(CachePolicy.ENABLED)
                                                 .diskCacheKey(data.thumbnail.lastOrNull()?.url)
-                                                .crossfade(true)
+                                                .crossfade(false)
                                                 .build(),
                                         placeholder = rememberHolderPainter(),
                                         error = rememberHolderPainter(),
@@ -237,7 +237,7 @@ fun PodcastScreen(
                                                 .height(250.dp)
                                                 .wrapContentWidth()
                                                 .align(Alignment.CenterHorizontally)
-                                                .clip(RoundedCornerShape(8.dp)),
+                                                .clip(RoundedCornerShape(14.dp)),
                                     )
                                     Box(
                                         modifier =
@@ -264,7 +264,7 @@ fun PodcastScreen(
                                                                 .data(data.authorThumbnail)
                                                                 .diskCachePolicy(CachePolicy.ENABLED)
                                                                 .diskCacheKey(data.authorThumbnail)
-                                                                .crossfade(true)
+                                                                .crossfade(false)
                                                                 .build(),
                                                         placeholder = rememberHolderPainter(),
                                                         error = rememberHolderPainter(),

@@ -60,7 +60,7 @@ fun MoreAlbumsScreen(
     viewModel: MoreAlbumsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val hazeState = rememberHazeState()
+    val hazeState = rememberHazeState(blurEnabled = false)
 
     LaunchedEffect(id, type) {
         Logger.w("MoreAlbumsScreen", "id: $id, type: $type")
@@ -125,7 +125,7 @@ fun MoreAlbumsScreen(
                     modifier =
                         Modifier
                             .hazeEffect(state = hazeState, style = HazeMaterials.ultraThin()) {
-                                blurEnabled = true
+                                blurEnabled = false
                             },
                     title = {
                         Text(
