@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -176,13 +177,28 @@ fun HomeItem(
                         style = typo().bodySmall,
                     )
                 }
-                Text(
-                    text = data.title,
-                    style = typo().headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth(),
-                )
+                ) {
+                    Box(
+                        Modifier
+                            .width(4.dp)
+                            .height(25.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primary),
+                    )
+                    Spacer(Modifier.width(9.dp))
+                    Text(
+                        text = data.title,
+                        style = typo().headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
         LazyRow(
@@ -323,8 +339,8 @@ fun HomeItemContentPlaylist(
         Column(
             modifier =
                 Modifier
-                    .padding(10.dp)
-                    .heightIn(min = thumbSize + 76.dp),
+                    .padding(horizontal = 8.dp, vertical = 7.dp)
+                    .heightIn(min = thumbSize + 58.dp),
         ) {
             val thumb =
                 when (data) {
@@ -403,7 +419,7 @@ fun HomeItemContentPlaylist(
                         .size(thumbSize)
                         .aspectRatio(1f)
                         .clip(
-                            RoundedCornerShape(10.dp),
+                            RoundedCornerShape(14.dp),
                         ),
             )
             Text(
@@ -432,7 +448,7 @@ fun HomeItemContentPlaylist(
                     Modifier
                         .width(thumbSize)
                         .wrapContentHeight(align = Alignment.CenterVertically)
-                        .padding(top = 8.dp),
+                        .padding(top = 6.dp),
             )
             Text(
                 text =
@@ -642,8 +658,8 @@ fun HomeItemSong(
         Column(
             modifier =
                 Modifier
-                    .padding(10.dp)
-                    .heightIn(min = 236.dp),
+                    .padding(horizontal = 8.dp, vertical = 7.dp)
+                    .heightIn(min = 218.dp),
         ) {
             val thumb =
                 data.thumbnails.lastOrNull()?.url?.let {
@@ -671,7 +687,7 @@ fun HomeItemSong(
                         .align(Alignment.CenterHorizontally)
                         .size(160.dp)
                         .clip(
-                            RoundedCornerShape(10.dp),
+                            RoundedCornerShape(14.dp),
                         ),
             )
             Text(
@@ -684,7 +700,7 @@ fun HomeItemSong(
                     Modifier
                         .width(160.dp)
                         .wrapContentHeight(align = Alignment.CenterVertically)
-                        .padding(top = 8.dp),
+                        .padding(top = 6.dp),
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AnimatedVisibility(visible = data.isExplicit == true) {
@@ -739,8 +755,8 @@ fun HomeItemVideo(
         Column(
             modifier =
                 Modifier
-                    .padding(10.dp)
-                    .heightIn(min = 236.dp),
+                    .padding(horizontal = 8.dp, vertical = 7.dp)
+                    .heightIn(min = 218.dp),
         ) {
             val thumb = data.thumbnails.lastOrNull()?.url
             AsyncImage(
@@ -762,7 +778,7 @@ fun HomeItemVideo(
                         .height(160.dp)
                         .aspectRatio(16f / 9f)
                         .clip(
-                            RoundedCornerShape(10.dp),
+                            RoundedCornerShape(14.dp),
                         ),
             )
             Text(
@@ -775,7 +791,7 @@ fun HomeItemVideo(
                     Modifier
                         .width(284.5.dp)
                         .wrapContentHeight(align = Alignment.CenterVertically)
-                        .padding(top = 8.dp),
+                        .padding(top = 6.dp),
             )
             Text(
                 text =
@@ -817,8 +833,8 @@ fun HomeItemArtist(
         Column(
             modifier =
                 Modifier
-                    .padding(10.dp)
-                    .heightIn(min = 236.dp),
+                    .padding(horizontal = 8.dp, vertical = 7.dp)
+                    .heightIn(min = 218.dp),
         ) {
             val thumb = data.thumbnails.lastOrNull()?.url
             AsyncImage(
@@ -853,7 +869,7 @@ fun HomeItemArtist(
                     Modifier
                         .width(160.dp)
                         .wrapContentHeight(align = Alignment.CenterVertically)
-                        .padding(top = 8.dp),
+                        .padding(top = 6.dp),
             )
             Text(
                 text = data.description?.takeIf { it.isNotBlank() }.orEmpty(),
