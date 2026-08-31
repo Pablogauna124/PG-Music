@@ -423,7 +423,7 @@ fun NowPlayingContentSpotify(
                                                 .data(state.screenData.canvasData?.url)
                                                 .diskCachePolicy(CachePolicy.ENABLED)
                                                 .diskCacheKey(state.screenData.canvasData?.url)
-                                                .crossfade(550)
+                                                .crossfade(false)
                                                 .build(),
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize(),
@@ -586,7 +586,7 @@ fun NowPlayingContentSpotify(
                                                 Modifier
                                                     .fillMaxWidth()
                                                     .aspectRatio(16f / 9)
-                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clip(RoundedCornerShape(16.dp))
                                                     .background(Color.Black),
                                         ) {
                                             Box(Modifier.fillMaxSize()) {
@@ -754,7 +754,7 @@ fun NowPlayingContentSpotify(
                                                     .data(staticThumb)
                                                     .diskCachePolicy(CachePolicy.ENABLED)
                                                     .diskCacheKey(staticThumb)
-                                                    .crossfade(300)
+                                                    .crossfade(false)
                                                     .build(),
                                             contentDescription = pageTrack.title,
                                             contentScale = ContentScale.Crop,
@@ -776,7 +776,7 @@ fun NowPlayingContentSpotify(
                                                     .padding(3.dp)
                                                     .fillMaxWidth()
                                                     .aspectRatio(1f)
-                                                    .clip(RoundedCornerShape(8.dp)),
+                                                    .clip(RoundedCornerShape(16.dp)),
                                         )
                                     }
                                 }
@@ -828,11 +828,7 @@ fun NowPlayingContentSpotify(
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .wrapContentHeight(align = Alignment.CenterVertically)
-                                        .basicMarquee(
-                                            iterations = Int.MAX_VALUE,
-                                            animationMode = MarqueeAnimationMode.Immediately,
-                                        ).focusable(),
+                                        .wrapContentHeight(align = Alignment.CenterVertically),
                             )
                         }
                     },
@@ -947,11 +943,7 @@ fun NowPlayingContentSpotify(
                                         modifier =
                                             Modifier
                                                 .fillMaxWidth()
-                                                .padding(horizontal = 20.dp)
-                                                .basicMarquee(
-                                                    iterations = Int.MAX_VALUE,
-                                                    animationMode = MarqueeAnimationMode.Immediately,
-                                                ).focusable(),
+                                                .padding(horizontal = 20.dp),
                                     )
                                 }
                             }
@@ -1024,10 +1016,10 @@ fun NowPlayingContentSpotify(
                                                                         ).clip(
                                                                             RoundedCornerShape(8.dp),
                                                                         ),
-                                                                color = Color.Gray,
+                                                                color = Color.White.copy(alpha = 0.28f),
                                                                 trackColor =
-                                                                    Color.Gray.copy(
-                                                                        alpha = 0.6f,
+                                                                    Color.White.copy(
+                                                                        alpha = 0.12f,
                                                                     ),
                                                                 strokeCap = StrokeCap.Round,
                                                                 drawStopIndicator = {},
@@ -1070,8 +1062,8 @@ fun NowPlayingContentSpotify(
                                                             sliderState = sliderState,
                                                             colors =
                                                                 SliderDefaults.colors().copy(
-                                                                    thumbColor = state.sliderTrackColor,
-                                                                    activeTrackColor = state.sliderTrackColor,
+                                                                    thumbColor = Color(0xFFFF1744),
+                                                                    activeTrackColor = Color(0xFFFF1744),
                                                                     inactiveTrackColor = Color.Transparent,
                                                                 ),
                                                             thumbTrackGapSize = 0.dp,
@@ -1095,8 +1087,8 @@ fun NowPlayingContentSpotify(
                                                                 },
                                                             colors =
                                                                 SliderDefaults.colors().copy(
-                                                                    thumbColor = state.sliderTrackColor,
-                                                                    activeTrackColor = state.sliderTrackColor,
+                                                                    thumbColor = Color(0xFFFF1744),
+                                                                    activeTrackColor = Color(0xFFFF1744),
                                                                     inactiveTrackColor = Color.Transparent,
                                                                 ),
                                                             enabled = true,
@@ -1201,13 +1193,13 @@ fun NowPlayingContentSpotify(
                                         // playlist/queue buttons off the end of this SpaceBetween row.
                                         Row(
                                             modifier = Modifier.weight(1f, fill = false),
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
                                             IconButton(
                                                 modifier =
                                                     Modifier
-                                                        .size(24.dp)
+                                                        .size(32.dp)
                                                         .aspectRatio(1f)
                                                         .clip(CircleShape),
                                                 onClick = {
@@ -1239,14 +1231,14 @@ fun NowPlayingContentSpotify(
                                         }
 
                                         Row(
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
                                             // NEW: Add to Playlist Button (Center-Right)
                                             IconButton(
                                                 modifier =
                                                     Modifier
-                                                        .size(24.dp)
+                                                        .size(32.dp)
                                                         .aspectRatio(1f)
                                                         .clip(CircleShape),
                                                 onClick = {
@@ -1264,7 +1256,7 @@ fun NowPlayingContentSpotify(
                                             IconButton(
                                                 modifier =
                                                     Modifier
-                                                        .size(24.dp)
+                                                        .size(32.dp)
                                                         .aspectRatio(1f)
                                                         .clip(CircleShape),
                                                 onClick = {
