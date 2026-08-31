@@ -146,7 +146,7 @@ fun LibraryScreen(
     val accountThumbnail by viewModel.accountThumbnail.collectAsStateWithLifecycle()
     val hazeState =
         rememberHazeState(
-            blurEnabled = true,
+            blurEnabled = false,
         )
 
     var topAppBarHeight by remember {
@@ -432,18 +432,30 @@ fun LibraryScreen(
         Modifier
             .background(Color.Transparent)
             .hazeEffect(hazeState, style = HazeMaterials.ultraThin()) {
-                blurEnabled = true
+                blurEnabled = false
             }.onGloballyPositioned { coordinates ->
                 topAppBarHeight = with(density) { coordinates.size.height.toDp() }
             },
     ) {
         TopAppBar(
             title = {
-                Text(
-                    text = stringResource(Res.string.library),
-                    style = typo().titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier
+                            .width(4.dp)
+                            .height(26.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primary),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(Res.string.library),
+                        style = typo().headlineSmall,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
             },
             colors =
                 TopAppBarDefaults.topAppBarColors(
@@ -504,8 +516,8 @@ fun LibraryScreen(
             modifier =
                 Modifier
                     .horizontalScroll(chipRowState)
-                    .padding(horizontal = 15.dp)
-                    .padding(bottom = 8.dp)
+                    .padding(horizontal = 12.dp)
+                    .padding(bottom = 6.dp)
                     .background(Color.Transparent),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {

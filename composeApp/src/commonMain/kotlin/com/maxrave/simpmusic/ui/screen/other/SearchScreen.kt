@@ -199,7 +199,7 @@ fun SearchScreen(
     val isMobilePortrait = getPlatform() == Platform.Android && screenInfo.wDP < screenInfo.hDP
     val moodGridColumns = if (isMobilePortrait) 2 else 4
 
-    val hazeState = rememberHazeState(blurEnabled = true)
+    val hazeState = rememberHazeState(blurEnabled = false)
     val suggestionsState = rememberLazyListState()
     val historyState = rememberLazyListState()
     val moodGridState = rememberLazyGridState()
@@ -963,7 +963,7 @@ fun SearchScreen(
                                 Modifier.background(Color.Transparent)
                             } else {
                                 Modifier.hazeEffect(hazeState, style = HazeMaterials.ultraThin()) {
-                                    blurEnabled = true
+                                    blurEnabled = false
                                 }
                             },
                         ).windowInsetsPadding(WindowInsets.statusBars)
@@ -1030,25 +1030,11 @@ fun SearchScreen(
                     onExpandedChange = {},
                     enabled = true,
                     placeholder = {
-                        // Animated placeholder text
-                        AnimatedContent(
-                            targetState = currentPlaceholderIndex,
-                            transitionSpec = {
-                                (
-                                    fadeIn(animationSpec = tween(500)) +
-                                        slideInVertically { height -> height }
-                                ).togetherWith(
-                                    fadeOut(animationSpec = tween(500)) +
-                                        slideOutVertically { height -> -height },
-                                )
-                            },
-                            label = "placeholder_animation",
-                        ) { index ->
-                            Text(
-                                text = placeholderTexts[index],
-                                style = typo().labelMedium,
-                            )
-                        }
+                        Text(
+                            text = placeholderTexts.first(),
+                            style = typo().labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     },
                     leadingIcon = {
                         Icon(
@@ -1084,7 +1070,7 @@ fun SearchScreen(
                     .onFocusChanged {
                         isFocused = it.isFocused
                     }.padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(22.dp),
             // See the note on SongSelectionTopAppBar above — the Column owns the status-bar inset.
             windowInsets = WindowInsets(0),
             content = {},
@@ -1097,7 +1083,7 @@ fun SearchScreen(
                         modifier =
                             Modifier
                                 .horizontalScroll(chipRowState)
-                                .padding(top = 10.dp)
+                                .padding(top = 8.dp)
                                 .padding(horizontal = 12.dp),
                     ) {
                         SearchType.entries.forEach { id ->
