@@ -65,7 +65,7 @@ fun LoginScreen(
     hideBottomNavigation: () -> Unit,
     showBottomNavigation: () -> Unit,
 ) {
-    val hazeState = rememberHazeState()
+    val hazeState = rememberHazeState(blurEnabled = false)
     val coroutineScope = rememberCoroutineScope()
     var devLoginSheet by rememberSaveable {
         mutableStateOf(false)
@@ -165,7 +165,7 @@ fun LoginScreen(
                 Modifier
                     .align(Alignment.TopCenter)
                     .hazeEffect(state = hazeState, style = HazeMaterials.ultraThin()) {
-                        blurEnabled = true
+                        blurEnabled = false
                     },
             title = {
                 Text(

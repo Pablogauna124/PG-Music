@@ -59,7 +59,7 @@ fun CreditScreen(
     paddingValues: PaddingValues,
     navController: NavController,
 ) {
-    val hazeState = rememberHazeState()
+    val hazeState = rememberHazeState(blurEnabled = false)
     Column(
         modifier =
             Modifier
@@ -222,7 +222,7 @@ fun CreditScreen(
         modifier =
             Modifier
                 .hazeEffect(state = hazeState, style = HazeMaterials.ultraThin()) {
-                    blurEnabled = true
+                    blurEnabled = false
                 },
         title = {
             Text(
