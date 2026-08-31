@@ -318,7 +318,7 @@ private fun ServerOption(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(18.dp))
                 .then(if (selected) Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)) else Modifier)
                 .border(
                     1.dp,
@@ -329,7 +329,7 @@ private fun ServerOption(
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.20f)
                     },
-                    RoundedCornerShape(16.dp),
+                    RoundedCornerShape(18.dp),
                 ).clickable { onClick() }
                 .padding(15.dp),
         verticalAlignment = Alignment.CenterVertically,

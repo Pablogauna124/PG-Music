@@ -144,8 +144,8 @@ import simpmusic.composeapp.generated.resources.settings
  * palette of hard-coded hexes. The first version of this screen invented its own #0F1319 dark and
  * its own accent, which is precisely why it read as pasted in from somewhere else.
  */
-private val CARD_SHAPE = RoundedCornerShape(24.dp)
-private val ROW_SHAPE = RoundedCornerShape(18.dp)
+private val CARD_SHAPE = RoundedCornerShape(20.dp)
+private val ROW_SHAPE = RoundedCornerShape(16.dp)
 
 /**
  * Below this the screen is one column. Two columns need room for two REAL columns — splitting a
@@ -771,7 +771,7 @@ private fun Suggestions(
                 Box(
                     Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)),
                 )
                 Column(Modifier.weight(1f)) {
