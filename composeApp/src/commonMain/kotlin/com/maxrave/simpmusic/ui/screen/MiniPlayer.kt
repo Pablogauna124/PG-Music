@@ -434,7 +434,7 @@ fun MiniPlayer(
                                     ImageRequest
                                         .Builder(LocalPlatformContext.current)
                                         .data(songEntity?.thumbnails)
-                                        .crossfade(550)
+                                        .crossfade(false)
                                         .build(),
                                 placeholder = rememberHolderPainter(),
                                 error = rememberHolderPainter(),
@@ -449,7 +449,7 @@ fun MiniPlayer(
                                         .size(40.dp)
                                         .align(Alignment.CenterVertically)
                                         .clip(
-                                            RoundedCornerShape(4.dp),
+                                            RoundedCornerShape(10.dp),
                                         ),
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -740,7 +740,7 @@ fun MiniPlayer(
                                 ImageRequest
                                     .Builder(LocalPlatformContext.current)
                                     .data(songEntity?.thumbnails)
-                                    .crossfade(550)
+                                    .crossfade(false)
                                     .build(),
                             placeholder = rememberHolderPainter(),
                             error = rememberHolderPainter(),
@@ -758,7 +758,7 @@ fun MiniPlayer(
                                 Modifier
                                     .size(32.dp)
                                     .clip(
-                                        RoundedCornerShape(6.dp),
+                                        RoundedCornerShape(10.dp),
                                     ),
                         )
                         Spacer(modifier = Modifier.width(10.dp))
