@@ -7,6 +7,14 @@ val isFullBuild: Boolean =
         false
     }
 
+val localProperties =
+    Properties().apply {
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { load(it) }
+        }
+    }
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.sentry.gradle)
@@ -81,8 +89,18 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(localProperties.getProperty("PGMUSIC_STORE_FILE"))
+            storePassword = localProperties.getProperty("PGMUSIC_STORE_PASSWORD")
+            keyAlias = localProperties.getProperty("PGMUSIC_KEY_ALIAS")
+            keyPassword = localProperties.getProperty("PGMUSIC_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -179,29 +197,16 @@ sentry {
     projectName.set("android")
     ignoredFlavors.set(setOf("foss"))
     ignoredBuildTypes.set(setOf("debug"))
+
+    // PG Music no realiza cargas automáticas a la cuenta Sentry
+    // heredada de SimpMusic durante los builds release.
     autoInstallation.enabled = false
-    if (isFullBuild) {
-        val token =
-            try {
-                println("Full build detected, enabling Sentry Auth Token")
-                val properties = Properties()
-                properties.load(rootProject.file("local.properties").inputStream())
-                properties.getProperty("SENTRY_AUTH_TOKEN")
-            } catch (e: Exception) {
-                println("Failed to load SENTRY_AUTH_TOKEN from local.properties: ${e.message}")
-                null
-            }
-        authToken.set(token ?: "")
-        includeProguardMapping.set(true)
-        autoUploadProguardMapping.set(true)
-    } else {
-        includeProguardMapping.set(false)
-        autoUploadProguardMapping.set(false)
-        uploadNativeSymbols.set(false)
-        includeDependenciesReport.set(false)
-        includeSourceContext.set(false)
-        includeNativeSources.set(false)
-    }
+    includeProguardMapping.set(false)
+    autoUploadProguardMapping.set(false)
+    uploadNativeSymbols.set(false)
+    includeDependenciesReport.set(false)
+    includeSourceContext.set(false)
+    includeNativeSources.set(false)
     telemetry.set(false)
 }
 
