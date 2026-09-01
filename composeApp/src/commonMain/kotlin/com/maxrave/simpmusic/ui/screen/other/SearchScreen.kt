@@ -242,15 +242,7 @@ fun SearchScreen(
             )
         }
 
-    var currentPlaceholderIndex by remember { mutableIntStateOf(0) }
-
-    // Animate placeholder - pause when focused
-    LaunchedEffect(isFocused) {
-        while (!isFocused) {
-            delay(3000) // Change every 3 seconds
-            currentPlaceholderIndex = (currentPlaceholderIndex + 1) % placeholderTexts.size
-        }
-    }
+    val currentPlaceholderIndex = 0
 
     var sheetSong by remember { mutableStateOf<SongEntity?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }

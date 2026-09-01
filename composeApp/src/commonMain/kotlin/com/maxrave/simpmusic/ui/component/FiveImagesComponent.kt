@@ -2,7 +2,6 @@ package com.maxrave.simpmusic.ui.component
 
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -203,10 +202,7 @@ private fun MarqueeLine(
             Modifier
                 .fillMaxWidth()
                 .wrapContentHeight(align = Alignment.CenterVertically)
-                .basicMarquee(
-                    iterations = Int.MAX_VALUE,
-                    animationMode = MarqueeAnimationMode.Immediately,
-                ).focusable(),
+                .focusable(),
     )
 }
 

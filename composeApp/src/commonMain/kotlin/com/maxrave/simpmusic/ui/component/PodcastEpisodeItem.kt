@@ -2,7 +2,6 @@ package com.maxrave.simpmusic.ui.component
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.MarqueeAnimationMode
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
@@ -85,10 +84,7 @@ fun PodcastEpisodeFullWidthItem(
                         Modifier
                             .fillMaxWidth()
                             .wrapContentHeight(align = Alignment.CenterVertically)
-                            .basicMarquee(
-                                iterations = Int.MAX_VALUE,
-                                animationMode = MarqueeAnimationMode.Immediately,
-                            ).focusable(),
+                            .focusable(),
                 )
 
                 Text(
@@ -100,10 +96,7 @@ fun PodcastEpisodeFullWidthItem(
                         Modifier
                             .fillMaxWidth()
                             .wrapContentHeight(align = Alignment.CenterVertically)
-                            .basicMarquee(
-                                iterations = Int.MAX_VALUE,
-                                animationMode = MarqueeAnimationMode.Immediately,
-                            ).focusable(),
+                            .focusable(),
                 )
 
                 val description = episode.description
@@ -117,10 +110,7 @@ fun PodcastEpisodeFullWidthItem(
                             Modifier
                                 .fillMaxWidth()
                                 .wrapContentHeight(align = Alignment.CenterVertically)
-                                .basicMarquee(
-                                    iterations = Int.MAX_VALUE,
-                                    animationMode = MarqueeAnimationMode.Immediately,
-                                ).focusable(),
+                                .focusable(),
                     )
                 }
             }
