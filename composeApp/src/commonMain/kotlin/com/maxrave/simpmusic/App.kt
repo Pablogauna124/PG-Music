@@ -718,22 +718,31 @@ fun App(viewModel: SharedViewModel = koinInject()) {
                         },
                         title = {
                             Text(
-                                text = "Nueva version de PG Music",
+                                text = "Nueva versión de PG Music",
                                 style = typo().titleMedium,
                             )
                         },
                         text = {
                             Column {
                                 Text(
-                                    text = "PG Music ${update.version} esta disponible.",
+                                    text = "PG Music ${update.version} está disponible.",
                                     style = typo().bodyMedium,
                                 )
 
                                 if (update.releaseNotes.isNotBlank()) {
-                                    Text(
-                                        text = "\n${update.releaseNotes}",
-                                        style = typo().bodySmall,
-                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Column(
+                                        modifier =
+                                            Modifier
+                                                .heightIn(max = 280.dp)
+                                                .verticalScroll(rememberScrollState()),
+                                    ) {
+                                        Text(
+                                            text = update.releaseNotes,
+                                            style = typo().bodySmall,
+                                        )
+                                    }
                                 }
                             }
                         },
@@ -745,7 +754,7 @@ fun App(viewModel: SharedViewModel = koinInject()) {
                                 },
                             ) {
                                 Text(
-                                    text = "Descargar actualizacion",
+                                    text = "Descargar actualización",
                                     style = typo().bodySmall,
                                 )
                             }
