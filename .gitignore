@@ -46,3 +46,4 @@ sentry.properties
 /desktopApp/generated.conveyor.conf
 # Conveyor output directory
 /output/
+release-pg-music-*/
