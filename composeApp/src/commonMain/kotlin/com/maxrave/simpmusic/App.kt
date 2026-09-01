@@ -136,10 +136,18 @@ fun App(viewModel: SharedViewModel = koinInject()) {
     val navController = rememberNavController()
     val isDesktopShell = getPlatform() == Platform.Desktop
 
+    LaunchedEffect(Unit) {
+        if (!isDesktopShell) {
+            viewModel.checkForUpdate()
+        }
+    }
+
     val sleepTimerState by viewModel.sleepTimerState.collectAsStateWithLifecycle()
     val nowPlayingData by viewModel.nowPlayingState.collectAsStateWithLifecycle()
     val intent by viewModel.intent.collectAsStateWithLifecycle()
     val showNotificationPermissionDialog by viewModel.showNotificationPermissionDialog.collectAsStateWithLifecycle()
+    val updateResponse by viewModel.updateResponse.collectAsStateWithLifecycle()
+
 
     val isTranslucentBottomBar by viewModel.getTranslucentBottomBar().collectAsStateWithLifecycle(DataStoreManager.FALSE)
     val isLiquidGlassEnabled by viewModel.getEnableLiquidGlass().collectAsStateWithLifecycle(DataStoreManager.FALSE)
@@ -699,6 +707,60 @@ fun App(viewModel: SharedViewModel = koinInject()) {
                                 stringResource(Res.string.good_night),
                                 style = typo().bodySmall,
                             )
+                        },
+                    )
+                }
+
+                updateResponse?.let { update ->
+                    AlertDialog(
+                        onDismissRequest = {
+                            viewModel.dismissUpdate()
+                        },
+                        title = {
+                            Text(
+                                text = "Nueva version de PG Music",
+                                style = typo().titleMedium,
+                            )
+                        },
+                        text = {
+                            Column {
+                                Text(
+                                    text = "PG Music ${update.version} esta disponible.",
+                                    style = typo().bodyMedium,
+                                )
+
+                                if (update.releaseNotes.isNotBlank()) {
+                                    Text(
+                                        text = "\n${update.releaseNotes}",
+                                        style = typo().bodySmall,
+                                    )
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    openUrl(update.downloadUrl)
+                                    viewModel.dismissUpdate()
+                                },
+                            ) {
+                                Text(
+                                    text = "Descargar actualizacion",
+                                    style = typo().bodySmall,
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = {
+                                    viewModel.dismissUpdate()
+                                },
+                            ) {
+                                Text(
+                                    text = "Ahora no",
+                                    style = typo().bodySmall,
+                                )
+                            }
                         },
                     )
                 }

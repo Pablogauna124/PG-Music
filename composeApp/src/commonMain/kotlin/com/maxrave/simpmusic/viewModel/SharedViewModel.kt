@@ -66,6 +66,10 @@ import com.maxrave.simpmusic.expect.getDownloadFolderPath
 import com.maxrave.simpmusic.expect.ui.toByteArray
 import com.maxrave.simpmusic.getPlatform
 import com.maxrave.simpmusic.utils.VersionManager
+import com.maxrave.simpmusic.update.PgMusicUpdate
+import com.maxrave.simpmusic.update.PgMusicUpdateManager
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import com.maxrave.simpmusic.viewModel.base.BaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -961,13 +965,38 @@ class SharedViewModel(
             }
     }
 
-    private var _updateResponse = MutableStateFlow<UpdateData?>(null)
-    val updateResponse: StateFlow<UpdateData?> = _updateResponse
+    private val _updateResponse = MutableStateFlow<PgMusicUpdate?>(null)
+    val updateResponse: StateFlow<PgMusicUpdate?> = _updateResponse
+
+    private val pgMusicUpdateClient by lazy {
+        HttpClient(CIO)
+    }
 
     fun checkForUpdate() {
-        // PG Music no consulta actualizaciones de SimpMusic ni F-Droid.
-        // Este punto queda reservado para el futuro actualizador propio de PG Music.
-        _isCheckingUpdate.value = false
+        if (_isCheckingUpdate.value) return
+
+        viewModelScope.launch {
+            _isCheckingUpdate.value = true
+
+            try {
+                _updateResponse.value =
+                    PgMusicUpdateManager.checkForUpdate(pgMusicUpdateClient)
+
+                showedUpdateDialog = _updateResponse.value != null
+            } catch (error: Exception) {
+                Logger.e(
+                    "PGMusicUpdater",
+                    "No se pudo comprobar la actualizacion: ${error.message}",
+                )
+                _updateResponse.value = null
+                showedUpdateDialog = false
+            } finally {
+                _isCheckingUpdate.value = false
+            }
+        }
+    }
+
+    fun dismissUpdate() {
         _updateResponse.value = null
         showedUpdateDialog = false
     }
