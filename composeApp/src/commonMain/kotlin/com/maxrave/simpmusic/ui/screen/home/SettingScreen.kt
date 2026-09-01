@@ -538,6 +538,7 @@ fun SettingScreen(
     val castState by viewModel.castState.collectAsStateWithLifecycle()
 
     val isCheckingUpdate by sharedViewModel.isCheckingUpdate.collectAsStateWithLifecycle()
+    val manualUpdateStatus by sharedViewModel.manualUpdateStatus.collectAsStateWithLifecycle()
 
     val hazeState =
         rememberHazeState(
@@ -2413,6 +2414,34 @@ fun SettingScreen(
                     onClick = {
                         navController.navigate(CreditDestination)
                     },
+                )
+
+                SettingItem(
+                    title = stringResource(Res.string.check_for_update),
+                    subtitle =
+                        when {
+                            isCheckingUpdate ->
+                                stringResource(Res.string.checking)
+
+                            manualUpdateStatus != null ->
+                                manualUpdateStatus.orEmpty()
+
+                            else ->
+                                "Versión instalada: ${VersionManager.getVersionName()}"
+                        },
+                    isEnable = !isCheckingUpdate,
+                    onClick = {
+                        sharedViewModel.checkForUpdate(manual = true)
+                    },
+                )
+
+                SettingItem(
+                    title = stringResource(Res.string.auto_check_for_update),
+                    subtitle = stringResource(Res.string.auto_check_for_update_description),
+                    switch =
+                        autoCheckUpdate to { enabled ->
+                            viewModel.setAutoCheckUpdate(enabled)
+                        },
                 )
 
                 SettingItem(

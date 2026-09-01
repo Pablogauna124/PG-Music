@@ -58,7 +58,7 @@ object PgMusicUpdateManager {
             }
 
         if (!response.status.isSuccess()) {
-            return null
+            error("GitHub respondio con HTTP ${response.status.value}")
         }
 
         val rawBody: String = response.body()

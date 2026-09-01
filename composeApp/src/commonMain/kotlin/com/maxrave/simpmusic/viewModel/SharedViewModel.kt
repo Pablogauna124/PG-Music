@@ -972,17 +972,33 @@ class SharedViewModel(
         HttpClient(CIO)
     }
 
-    fun checkForUpdate() {
+    private val _manualUpdateStatus = MutableStateFlow<String?>(null)
+    val manualUpdateStatus: StateFlow<String?> = _manualUpdateStatus
+
+    fun checkForUpdate(manual: Boolean = false) {
         if (_isCheckingUpdate.value) return
 
         viewModelScope.launch {
             _isCheckingUpdate.value = true
+
+            if (manual) {
+                _manualUpdateStatus.value = null
+            }
 
             try {
                 _updateResponse.value =
                     PgMusicUpdateManager.checkForUpdate(pgMusicUpdateClient)
 
                 showedUpdateDialog = _updateResponse.value != null
+
+                if (manual) {
+                    _manualUpdateStatus.value =
+                        if (_updateResponse.value == null) {
+                            "✓ PG Music está actualizado · Versión ${VersionManager.getVersionName()}"
+                        } else {
+                            "Nueva versión disponible: ${_updateResponse.value?.version}"
+                        }
+                }
             } catch (error: Exception) {
                 Logger.e(
                     "PGMusicUpdater",
@@ -990,6 +1006,11 @@ class SharedViewModel(
                 )
                 _updateResponse.value = null
                 showedUpdateDialog = false
+
+                if (manual) {
+                    _manualUpdateStatus.value =
+                        "No se pudo comprobar la actualización"
+                }
             } finally {
                 _isCheckingUpdate.value = false
             }

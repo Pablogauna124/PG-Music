@@ -137,7 +137,7 @@ fun App(viewModel: SharedViewModel = koinInject()) {
     val isDesktopShell = getPlatform() == Platform.Desktop
 
     LaunchedEffect(Unit) {
-        if (!isDesktopShell) {
+        if (!isDesktopShell && viewModel.shouldCheckForUpdate()) {
             viewModel.checkForUpdate()
         }
     }
