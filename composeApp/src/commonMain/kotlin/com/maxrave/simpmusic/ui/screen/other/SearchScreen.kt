@@ -364,7 +364,16 @@ fun SearchScreen(
                         state = suggestionsState,
                         contentPadding = PaddingValues(top = searchBarHeight, bottom = 10.dp),
                     ) {
-                        items(searchScreenState.suggestYTItems) { item ->
+                        items(searchScreenState.suggestYTItems, key = {
+                            when (it) {
+                                is SongsResult -> "song_${it.videoId}"
+                                is VideosResult -> "video_${it.videoId}"
+                                is AlbumsResult -> "album_${it.browseId}"
+                                is ArtistsResult -> "artist_${it.browseId}"
+                                is PlaylistsResult -> "playlist_${it.browseId}"
+                                else -> it.hashCode().toString()
+                            }
+                        }) { item ->
                             SuggestItemRow(
                                 searchResult = item,
                                 onItemClick = { item ->
@@ -407,7 +416,7 @@ fun SearchScreen(
                                 },
                             )
                         }
-                        items(searchScreenState.suggestQueries) { suggestion ->
+                        items(searchScreenState.suggestQueries, key = { "query_$it" }) { suggestion ->
                             Row(
                                 modifier =
                                     Modifier
@@ -497,7 +506,7 @@ fun SearchScreen(
                                     }
                                 }
                             }
-                            items(searchHistory) { historyItem ->
+                            items(searchHistory, key = { "hist_$it" }) { historyItem ->
                                 Row(
                                     modifier =
                                         Modifier
@@ -740,7 +749,16 @@ fun SearchScreen(
                                                             ),
                                                         state = resultsState,
                                                     ) {
-                                                        items(currentResults) { result ->
+                                                        items(currentResults, key = {
+                                                        when (it) {
+                                                            is SongsResult -> "res_song_${it.videoId}"
+                                                            is VideosResult -> "res_video_${it.videoId}"
+                                                            is AlbumsResult -> "res_album_${it.browseId}"
+                                                            is ArtistsResult -> "res_artist_${it.browseId}"
+                                                            is PlaylistsResult -> "res_playlist_${it.browseId}"
+                                                            else -> it.hashCode().toString()
+                                                        }
+                                                    }) { result ->
                                                             when (result) {
                                                                 is SongsResult -> {
                                                                     SongFullWidthItems(
