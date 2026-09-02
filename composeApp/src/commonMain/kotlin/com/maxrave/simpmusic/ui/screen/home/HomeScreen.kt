@@ -354,7 +354,7 @@ fun HomeScreen(
                             }
                         }
                         if (homeListState == ListState.PAGINATION_EXHAUST) {
-                            items(newRelease, key = { it.hashCode() }) { Box(Modifier.padding(horizontal = 18.dp)) { HomeItem(navController = navController, data = it) } }
+                            items(newRelease, key = { "release_${it.title}_${it.channelId ?: it.subtitle ?: ""}" }) { Box(Modifier.padding(horizontal = 18.dp)) { HomeItem(navController = navController, data = it) } }
                             item { moodMomentAndGenre?.let { Box(Modifier.padding(horizontal = 18.dp)) { MoodMomentAndGenre(it, navController) } } }
                             item {
                                 Column(Modifier.padding(vertical = 10.dp).padding(horizontal = 18.dp)) {
@@ -502,7 +502,7 @@ fun QuickPicks(homeItem: HomeItem, navController: NavController, viewModel: Home
         Text(stringResource(Res.string.let_s_start_with_a_radio), style = typo().bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         PgSectionTitle(stringResource(Res.string.quick_picks))
         LazyHorizontalGrid(rows = GridCells.Fixed(4), modifier = Modifier.height(256.dp), state = lazyListState, flingBehavior = snapperFlingBehavior) {
-            items(homeItem.contents, key = { it.hashCode() }) { item ->
+            items(homeItem.contents, key = { item -> item?.videoId ?: item?.browseId ?: item?.playlistId ?: item?.title ?: item.hashCode() }) { item ->
                 item?.let {
                     QuickPicksItem(
                         onClick = {

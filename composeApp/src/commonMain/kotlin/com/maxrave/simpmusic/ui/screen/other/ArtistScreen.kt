@@ -816,7 +816,7 @@ private fun ArtistSections(
                     item {
                         Spacer(Modifier.size(10.dp))
                     }
-                    items(state.data.singles?.results ?: emptyList()) { single ->
+                    items(state.data.singles?.results ?: emptyList(), key = { it.browseId }) { single ->
                         HomeItemContentPlaylist(
                             forceDark = true,                            onClick = {
                                 navController.navigate(
@@ -884,7 +884,7 @@ private fun ArtistSections(
                     item {
                         Spacer(Modifier.size(10.dp))
                     }
-                    items(state.data.albums?.results ?: emptyList()) { album ->
+                    items(state.data.albums?.results ?: emptyList(), key = { it.browseId }) { album ->
                         HomeItemContentPlaylist(
                             forceDark = true,                            onClick = {
                                 navController.navigate(
@@ -951,7 +951,7 @@ private fun ArtistSections(
                     item {
                         Spacer(Modifier.size(10.dp))
                     }
-                    items(state.data.video?.video ?: emptyList()) { video ->
+                    items(state.data.video?.video ?: emptyList(), key = { it.videoId }) { video ->
                         HomeItemVideo(
                             forceDark = true,                            onClick = {
                                 val firstQueue: Track = video
@@ -1018,7 +1018,7 @@ private fun ArtistSections(
                     item {
                         Spacer(Modifier.size(10.dp))
                     }
-                    items(state.data.featuredOn) { feature ->
+                    items(state.data.featuredOn, key = { it.id }) { feature ->
                         HomeItemContentPlaylist(
                             forceDark = true,                            onClick = {
                                 navController.navigate(
@@ -1066,7 +1066,7 @@ private fun ArtistSections(
                     item {
                         Spacer(Modifier.size(10.dp))
                     }
-                    items(state.data.related?.results ?: emptyList()) { related ->
+                    items(state.data.related?.results ?: emptyList(), key = { it.browseId }) { related ->
                         HomeItemArtist(
                             forceDark = true,                            onClick = {
                                 navController.navigate(
