@@ -12,6 +12,7 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.crossfade
@@ -44,6 +45,7 @@ class SimpMusicApplication :
     SingletonImageLoader.Factory {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val sharedOkHttpClient by lazy { OkHttpClient() }
     private val dataStoreManager: DataStoreManager by inject()
     private lateinit var autoBackupScheduler: AutoBackupScheduler
 
@@ -110,19 +112,22 @@ class SimpMusicApplication :
             .components {
                 add(
                     OkHttpNetworkFetcherFactory(
-                        callFactory = {
-                            OkHttpClient()
-                        },
+                        callFactory = { sharedOkHttpClient },
                     ),
                 )
             }.diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizePercent(context, 0.15)
+                    .build()
+            }
             .diskCache(
                 DiskCache
                     .Builder()
                     .directory(FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "image_cache")
-                    .maxSizeBytes(512L * 1024 * 1024)
+                    .maxSizeBytes(128L * 1024 * 1024)
                     .build(),
-            ).crossfade(true)
+            ).crossfade(false)
             .build()
 }

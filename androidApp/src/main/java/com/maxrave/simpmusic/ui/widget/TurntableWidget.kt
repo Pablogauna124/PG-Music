@@ -38,6 +38,7 @@ import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.unit.ColorProvider
 import coil3.ImageLoader
+import coil3.SingletonImageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -136,7 +137,7 @@ class TurntableWidget :
                             .allowHardware(false)
                             .build()
                     val loaded =
-                        (ImageLoader(context).execute(request) as? SuccessResult)
+                        (SingletonImageLoader.get(context).execute(request) as? SuccessResult)
                             ?.image
                             ?.toBitmap()
                     rawArtwork = loaded
