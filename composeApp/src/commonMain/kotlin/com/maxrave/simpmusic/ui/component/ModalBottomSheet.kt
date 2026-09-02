@@ -3116,7 +3116,7 @@ fun SortPlaylistBottomSheet(
                             .align(Alignment.Start),
                 )
                 LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
-                    items(filterOptions, key = { it.hashCode() }) { filterOption ->
+                    items(filterOptions, key = { it.toString() }) { filterOption ->
                         val isSelected = filterOption == selectedState
                         Row(
                             Modifier
