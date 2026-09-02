@@ -145,7 +145,7 @@ fun NotificationScreen(
                         ),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    items(it) { notification ->
+                    items(it, key = { it.id }) { notification ->
                         NotificationItem(
                             notification = notification,
                             navController,
@@ -281,7 +281,7 @@ fun NotificationItem(
             LazyRow(
                 Modifier.padding(top = 15.dp),
             ) {
-                items(notification.single) { single ->
+                items(notification.single, key = { it["browseId"] ?: (it["title"] ?: it.hashCode().toString()) }) { single ->
                     ItemAlbumNotification(
                         isAlbum = false,
                         browseId = single["browseId"] ?: "",
@@ -290,7 +290,7 @@ fun NotificationItem(
                         navController,
                     )
                 }
-                items(notification.album) { album ->
+                items(notification.album, key = { it["browseId"] ?: (it["title"] ?: it.hashCode().toString()) }) { album ->
                     ItemAlbumNotification(
                         isAlbum = true,
                         browseId = album["browseId"] ?: "",

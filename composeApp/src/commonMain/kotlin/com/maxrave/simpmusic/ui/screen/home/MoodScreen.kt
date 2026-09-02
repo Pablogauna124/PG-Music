@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.maxrave.simpmusic.ui.component.CenterLoadingBox
 import com.maxrave.simpmusic.ui.component.EndOfPage
+import com.maxrave.domain.data.model.mood.moodmoments.Item
 import com.maxrave.simpmusic.ui.component.MoodAndGenresContentItem
 import com.maxrave.simpmusic.ui.component.NormalAppBar
 import com.maxrave.simpmusic.ui.icon.ArrowBackIosNew
@@ -62,7 +63,7 @@ fun MoodScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
             ) {
-                items(moodData?.items ?: emptyList()) { item ->
+                items(moodData?.items ?: emptyList(), key = { it.header }) { item ->
                     MoodAndGenresContentItem(
                         data = item,
                         navController = navController,
