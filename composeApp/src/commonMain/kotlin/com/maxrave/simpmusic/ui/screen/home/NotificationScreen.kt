@@ -62,6 +62,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.maxrave.domain.data.entities.NotificationEntity
+import com.maxrave.simpmusic.extension.barBlurStyle
 import com.maxrave.simpmusic.extension.formatTimeAgo
 import com.maxrave.simpmusic.ui.component.AmbientThemeGlow
 import com.maxrave.simpmusic.ui.component.CenterLoadingBox
@@ -77,8 +78,8 @@ import com.maxrave.simpmusic.ui.navigation.destination.list.ArtistDestination
 import com.maxrave.simpmusic.ui.theme.typo
 import com.maxrave.simpmusic.viewModel.NotificationViewModel
 import com.maxrave.simpmusic.viewModel.SharedViewModel
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import org.jetbrains.compose.resources.stringResource
@@ -102,7 +103,7 @@ fun NotificationScreen(
     val glowNowPlaying by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val density = LocalDensity.current
-    val hazeState = rememberHazeState(blurEnabled = false)
+    val hazeState = rememberHazeState()
     var topAppBarHeight by remember { mutableStateOf(0.dp) }
     // Home's rule: transparent only while pixel-0 is on screen; the frost itself stays light.
     val isAtTop by remember {
@@ -145,7 +146,7 @@ fun NotificationScreen(
                         ),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    items(it, key = { it.id }) { notification ->
+                    items(it) { notification ->
                         NotificationItem(
                             notification = notification,
                             navController,
@@ -187,12 +188,7 @@ fun NotificationScreen(
                         Modifier
                     } else {
                         // AlbumScreen's bar recipe, thinned to 0.3 — see SettingScreen.
-                        Modifier.hazeEffect(hazeState) {
-                            blurEnabled = false
-                            blurRadius = 24.dp
-                            backgroundColor = barTint
-                            tints = listOf(HazeTint(barTint.copy(alpha = 0.3f)))
-                        }
+                        Modifier.hazeBlur(HazeInput.Sources(hazeState), barBlurStyle(barTint, 0.3f))
                     },
                 ).onGloballyPositioned { coordinates ->
                     topAppBarHeight = with(density) { coordinates.size.height.toDp() }
@@ -257,7 +253,7 @@ fun NotificationItem(
                             .data(thumb)
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .diskCacheKey(thumb)
-                            .crossfade(false)
+                            .crossfade(true)
                             .build(),
                     placeholder = rememberHolderPainter(),
                     error = rememberHolderPainter(),
@@ -281,7 +277,7 @@ fun NotificationItem(
             LazyRow(
                 Modifier.padding(top = 15.dp),
             ) {
-                items(notification.single, key = { it["browseId"] ?: (it["title"] ?: it.hashCode().toString()) }) { single ->
+                items(notification.single) { single ->
                     ItemAlbumNotification(
                         isAlbum = false,
                         browseId = single["browseId"] ?: "",
@@ -290,7 +286,7 @@ fun NotificationItem(
                         navController,
                     )
                 }
-                items(notification.album, key = { it["browseId"] ?: (it["title"] ?: it.hashCode().toString()) }) { album ->
+                items(notification.album) { album ->
                     ItemAlbumNotification(
                         isAlbum = true,
                         browseId = album["browseId"] ?: "",
@@ -402,7 +398,7 @@ fun ItemAlbumNotification(
                         .data(thumbnail)
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .diskCacheKey(thumbnail)
-                        .crossfade(false)
+                        .crossfade(true)
                         .build(),
                 placeholder = rememberHolderPainter(),
                 error = rememberHolderPainter(),
@@ -413,7 +409,7 @@ fun ItemAlbumNotification(
                         .align(Alignment.CenterHorizontally)
                         .size(150.dp)
                         .clip(
-                            RoundedCornerShape(14.dp),
+                            RoundedCornerShape(10),
                         ),
             )
             Text(

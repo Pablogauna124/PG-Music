@@ -48,7 +48,6 @@ import kotlin.reflect.KClass
 fun AppBottomNavigationBar(
     startDestination: Any = HomeDestination,
     navController: NavController,
-    isTranslucentBackground: Boolean = false,
     showAnalyticsTab: Boolean = false,
     showMixForYouTab: Boolean = false,
     reloadDestinationIfNeeded: (KClass<*>) -> Unit = { _ -> },
@@ -112,6 +111,7 @@ fun AppBottomNavigationBar(
     // Search rides in its own circular button, so the capsule holds everything else.
     val barTabs = bottomNavScreens.filter { it != BottomNavScreen.Search }
 
+<<<<<<< HEAD
     // The translucent switch tints the CAPSULE ITSELF, never a strip behind it — the area around
     // the floating cluster always shows the page. ON reads the content through the pill; OFF is a
     // solid surface. The indicator stays nearer opaque so the selection survives busy artwork.
@@ -126,6 +126,12 @@ fun AppBottomNavigationBar(
         MaterialTheme.colorScheme.primary.copy(
             alpha = if (isTranslucentBackground) 0.16f else 0.13f,
         )
+=======
+    // 85%: the page shows faintly through the floating cluster (the capsule and the search button);
+    // the indicator stays opaque so the selection survives busy artwork.
+    val capsuleColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f)
+    val indicatorColor = MaterialTheme.colorScheme.surfaceContainerHighest
+>>>>>>> upstream/main
 
     Row(
         verticalAlignment = Alignment.CenterVertically,

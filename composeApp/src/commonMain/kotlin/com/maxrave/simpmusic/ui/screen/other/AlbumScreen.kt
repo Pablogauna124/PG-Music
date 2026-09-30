@@ -68,6 +68,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.kmpalette.rememberPaletteState
 import com.kyant.backdrop.highlight.Highlight
+import com.maxrave.simpmusic.extension.barBlurStyle
+import com.maxrave.simpmusic.ui.component.DownloadingIndicator
 import com.maxrave.domain.data.entities.DownloadState
 import com.maxrave.domain.data.model.browse.album.Track
 import com.maxrave.domain.utils.toSongEntity
@@ -110,14 +112,10 @@ import com.maxrave.simpmusic.viewModel.LocalPlaylistState
 import com.maxrave.simpmusic.viewModel.SharedViewModel
 import com.maxrave.simpmusic.viewModel.SongSelectionViewModel
 import com.maxrave.simpmusic.viewModel.UIEvent
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-import io.github.alexzhirkevich.compottie.Compottie
-import io.github.alexzhirkevich.compottie.LottieCompositionSpec
-import io.github.alexzhirkevich.compottie.rememberLottieComposition
-import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
@@ -166,11 +164,6 @@ fun AlbumScreen(
     var showSelectionSheet by rememberSaveable { mutableStateOf(false) }
     var showSelectionAddToPlaylist by rememberSaveable { mutableStateOf(false) }
 
-    val composition by rememberLottieComposition {
-        LottieCompositionSpec.JsonString(
-            Res.readBytes("files/downloading_animation.json").decodeToString(),
-        )
-    }
 
     LaunchedEffect(browseId) {
         viewModel.updateBrowseId(browseId)
@@ -188,9 +181,7 @@ fun AlbumScreen(
     }
     val paletteState = rememberPaletteState()
     val hazeState =
-        rememberHazeState(
-            blurEnabled = false,
-        )
+        rememberHazeState()
     var bitmap by remember {
         mutableStateOf<ImageBitmap?>(null)
     }
@@ -504,7 +495,7 @@ fun AlbumScreen(
                                                                     Modifier
                                                                         .size(48.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(Color(0xFF2A080D))
+                                                                        .background(Color.White.copy(alpha = 0.12f))
                                                                         .clickable { viewModel.shuffle() },
                                                                 contentAlignment = Alignment.Center,
                                                             ) {
@@ -521,7 +512,7 @@ fun AlbumScreen(
                                                                         .height(48.dp)
                                                                         .widthIn(min = 110.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(Color(0xFFFF1744))
+                                                                        .background(Color.White)
                                                                         .clickable {
                                                                             if (isThisPlaying) {
                                                                                 sharedViewModel.onUIEvent(UIEvent.PlayPause)
@@ -538,13 +529,13 @@ fun AlbumScreen(
                                                                         imageVector =
                                                                             if (isThisPlaying) SimpIcons.Pause else SimpIcons.PlayArrow,
                                                                         contentDescription = null,
-                                                                        tint = Color.White,
+                                                                        tint = Color.Black,
                                                                         modifier = Modifier.size(22.dp),
                                                                     )
                                                                     Spacer(modifier = Modifier.width(4.dp))
                                                                     Text(
                                                                         text = if (isThisPlaying) "Pause" else "Play",
-                                                                        color = Color.White,
+                                                                        color = Color.Black,
                                                                         style = typo().labelLarge,
                                                                     )
                                                                 }
@@ -554,7 +545,7 @@ fun AlbumScreen(
                                                                     Modifier
                                                                         .size(48.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(Color(0xFF2A080D)),
+                                                                        .background(Color.White.copy(alpha = 0.12f)),
                                                                 contentAlignment = Alignment.Center,
                                                             ) {
                                                                 Crossfade(targetState = uiState.downloadState) { state ->
@@ -596,13 +587,7 @@ fun AlbumScreen(
                                                                                         },
                                                                                 contentAlignment = Alignment.Center,
                                                                             ) {
-                                                                                Image(
-                                                                                    painter =
-                                                                                        rememberLottiePainter(
-                                                                                            composition = composition,
-                                                                                            iterations = Compottie.IterateForever,
-                                                                                        ),
-                                                                                    contentDescription = "Lottie animation",
+                                                                                DownloadingIndicator(
                                                                                     modifier = Modifier.size(28.dp),
                                                                                 )
                                                                             }
@@ -714,7 +699,7 @@ fun AlbumScreen(
                                                             Modifier
                                                                 .size(48.dp)
                                                                 .clip(CircleShape)
-                                                                .background(Color(0xFF2A080D))
+                                                                .background(Color.White.copy(alpha = 0.12f))
                                                                 .clickable { viewModel.shuffle() },
                                                         contentAlignment = Alignment.Center,
                                                     ) {
@@ -731,7 +716,7 @@ fun AlbumScreen(
                                                                 .height(48.dp)
                                                                 .widthIn(min = 110.dp)
                                                                 .clip(CircleShape)
-                                                                .background(Color(0xFFFF1744))
+                                                                .background(Color.White)
                                                                 .clickable {
                                                                     if (isThisPlaying) {
                                                                         sharedViewModel.onUIEvent(UIEvent.PlayPause)
@@ -748,13 +733,13 @@ fun AlbumScreen(
                                                                 imageVector =
                                                                     if (isThisPlaying) SimpIcons.Pause else SimpIcons.PlayArrow,
                                                                 contentDescription = null,
-                                                                tint = Color.White,
+                                                                tint = Color.Black,
                                                                 modifier = Modifier.size(22.dp),
                                                             )
                                                             Spacer(modifier = Modifier.width(4.dp))
                                                             Text(
                                                                 text = if (isThisPlaying) "Pause" else "Play",
-                                                                color = Color.White,
+                                                                color = Color.Black,
                                                                 style = typo().labelLarge,
                                                             )
                                                         }
@@ -764,7 +749,7 @@ fun AlbumScreen(
                                                             Modifier
                                                                 .size(48.dp)
                                                                 .clip(CircleShape)
-                                                                .background(Color(0xFF2A080D)),
+                                                                .background(Color.White.copy(alpha = 0.12f)),
                                                         contentAlignment = Alignment.Center,
                                                     ) {
                                                         Crossfade(targetState = uiState.downloadState) { state ->
@@ -806,13 +791,7 @@ fun AlbumScreen(
                                                                                 },
                                                                         contentAlignment = Alignment.Center,
                                                                     ) {
-                                                                        Image(
-                                                                            painter =
-                                                                                rememberLottiePainter(
-                                                                                    composition = composition,
-                                                                                    iterations = Compottie.IterateForever,
-                                                                                ),
-                                                                            contentDescription = "Lottie animation",
+                                                                        DownloadingIndicator(
                                                                             modifier = Modifier.size(28.dp),
                                                                         )
                                                                     }
@@ -928,7 +907,7 @@ fun AlbumScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(horizontal = 12.dp),
                                 ) {
-                                    items(uiState.otherVersion, key = { it.browseId }) { album ->
+                                    items(uiState.otherVersion) { album ->
                                         HomeItemContentPlaylist(
                                             forceDark = true,
                                             onClick = {
@@ -989,12 +968,7 @@ fun AlbumScreen(
                                 containerColor = Color.Transparent,
                             ),
                         modifier =
-                            Modifier.hazeEffect(hazeState) {
-                                blurEnabled = false
-                                blurRadius = 24.dp
-                                backgroundColor = mutedPaletteBg
-                                tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
-                            },
+                            Modifier.hazeBlur(HazeInput.Sources(hazeState), barBlurStyle(mutedPaletteBg, 0.55f)),
                     )
                 }
                 AnimatedVisibility(
@@ -1009,12 +983,7 @@ fun AlbumScreen(
                         },
                         onOpenActions = { showSelectionSheet = true },
                         modifier =
-                            Modifier.hazeEffect(hazeState) {
-                                blurEnabled = false
-                                blurRadius = 24.dp
-                                backgroundColor = mutedPaletteBg
-                                tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
-                            },
+                            Modifier.hazeBlur(HazeInput.Sources(hazeState), barBlurStyle(mutedPaletteBg, 0.55f)),
                     )
                 }
                 if (showSelectionSheet) {

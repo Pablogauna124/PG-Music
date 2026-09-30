@@ -85,6 +85,8 @@ import coil3.request.crossfade
 import coil3.toBitmap
 import com.kyant.backdrop.highlight.Highlight
 import com.kmpalette.rememberPaletteState
+import com.maxrave.simpmusic.extension.barBlurStyle
+import com.maxrave.simpmusic.ui.component.DownloadingIndicator
 import com.maxrave.domain.data.entities.DownloadState
 import com.maxrave.domain.data.model.browse.album.Track
 import com.maxrave.domain.utils.toSongEntity
@@ -135,16 +137,10 @@ import com.maxrave.simpmusic.viewModel.PlaylistViewModel
 import com.maxrave.simpmusic.viewModel.SharedViewModel
 import com.maxrave.simpmusic.viewModel.SongSelectionViewModel
 import com.maxrave.simpmusic.viewModel.UIEvent
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
-import io.github.alexzhirkevich.compottie.Compottie
-import io.github.alexzhirkevich.compottie.LottieCompositionSpec
-import io.github.alexzhirkevich.compottie.rememberLottieComposition
-import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -166,7 +162,7 @@ import simpmusic.composeapp.generated.resources.radio
 import simpmusic.composeapp.generated.resources.search
 import simpmusic.composeapp.generated.resources.unlimited
 
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistScreen(
     viewModel: PlaylistViewModel = koinViewModel(),
@@ -182,11 +178,6 @@ fun PlaylistScreen(
     val id = playlistId.removePrefix("VL")
     val tag = "PlaylistScreen"
 
-    val composition by rememberLottieComposition {
-        LottieCompositionSpec.JsonString(
-            Res.readBytes("files/downloading_animation.json").decodeToString(),
-        )
-    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val continuation by viewModel.continuation.collectAsStateWithLifecycle()
     val listColors by viewModel.listColors.collectAsStateWithLifecycle()
@@ -313,9 +304,7 @@ fun PlaylistScreen(
     }
     val paletteState = rememberPaletteState()
     val hazeState =
-        rememberHazeState(
-            blurEnabled = false,
-        )
+        rememberHazeState()
     var bitmap by remember {
         mutableStateOf<ImageBitmap?>(null)
     }
@@ -373,9 +362,7 @@ fun PlaylistScreen(
                 Logger.d(tag, "data: $data")
                 if (data == null) return@Crossfade
                 val hazeState =
-                    rememberHazeState(
-                        blurEnabled = false,
-                    )
+                    rememberHazeState()
                 LazyColumn(
                     modifier =
                         Modifier
@@ -672,7 +659,7 @@ fun PlaylistScreen(
                                                                             Modifier
                                                                                 .size(48.dp)
                                                                                 .clip(CircleShape)
-                                                                                .background(Color(0xFF2A080D))
+                                                                                .background(Color.White.copy(alpha = 0.12f))
                                                                                 .clickable {
                                                                                     viewModel.onUIEvent(PlaylistUIEvent.Shuffle)
                                                                                 },
@@ -692,7 +679,7 @@ fun PlaylistScreen(
                                                                             .height(48.dp)
                                                                             .widthIn(min = 110.dp)
                                                                             .clip(CircleShape)
-                                                                            .background(Color(0xFFFF1744))
+                                                                            .background(Color.White)
                                                                             .clickable {
                                                                                 if (isThisPlaying) {
                                                                                     sharedViewModel.onUIEvent(UIEvent.PlayPause)
@@ -707,13 +694,13 @@ fun PlaylistScreen(
                                                                             imageVector =
                                                                                 if (isThisPlaying) SimpIcons.Pause else SimpIcons.PlayArrow,
                                                                             contentDescription = null,
-                                                                            tint = Color.White,
+                                                                            tint = Color.Black,
                                                                             modifier = Modifier.size(22.dp),
                                                                         )
                                                                         Spacer(modifier = Modifier.width(4.dp))
                                                                         Text(
                                                                             text = if (isThisPlaying) "Pause" else "Play",
-                                                                            color = Color.White,
+                                                                            color = Color.Black,
                                                                             style = typo().labelLarge,
                                                                         )
                                                                     }
@@ -724,7 +711,7 @@ fun PlaylistScreen(
                                                                             Modifier
                                                                                 .size(48.dp)
                                                                                 .clip(CircleShape)
-                                                                                .background(Color(0xFF2A080D)),
+                                                                                .background(Color.White.copy(alpha = 0.12f)),
                                                                         contentAlignment = Alignment.Center,
                                                                     ) {
                                                                         Crossfade(targetState = downloadState) { state ->
@@ -762,13 +749,7 @@ fun PlaylistScreen(
                                                                                                 },
                                                                                         contentAlignment = Alignment.Center,
                                                                                     ) {
-                                                                                        Image(
-                                                                                            painter =
-                                                                                                rememberLottiePainter(
-                                                                                                    composition = composition,
-                                                                                                    iterations = Compottie.IterateForever,
-                                                                                                ),
-                                                                                            contentDescription = "Lottie animation",
+                                                                                        DownloadingIndicator(
                                                                                             modifier = Modifier.size(28.dp),
                                                                                         )
                                                                                     }
@@ -893,7 +874,7 @@ fun PlaylistScreen(
                                                                     Modifier
                                                                         .size(48.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(Color(0xFF2A080D))
+                                                                        .background(Color.White.copy(alpha = 0.12f))
                                                                         .clickable {
                                                                             viewModel.onUIEvent(PlaylistUIEvent.Shuffle)
                                                                         },
@@ -913,7 +894,7 @@ fun PlaylistScreen(
                                                                     .height(48.dp)
                                                                     .widthIn(min = 110.dp)
                                                                     .clip(CircleShape)
-                                                                    .background(Color(0xFFFF1744))
+                                                                    .background(Color.White)
                                                                     .clickable {
                                                                         if (isThisPlaying) {
                                                                             sharedViewModel.onUIEvent(UIEvent.PlayPause)
@@ -928,13 +909,13 @@ fun PlaylistScreen(
                                                                     imageVector =
                                                                         if (isThisPlaying) SimpIcons.Pause else SimpIcons.PlayArrow,
                                                                     contentDescription = null,
-                                                                    tint = Color.White,
+                                                                    tint = Color.Black,
                                                                     modifier = Modifier.size(22.dp),
                                                                 )
                                                                 Spacer(modifier = Modifier.width(4.dp))
                                                                 Text(
                                                                     text = if (isThisPlaying) "Pause" else "Play",
-                                                                    color = Color.White,
+                                                                    color = Color.Black,
                                                                     style = typo().labelLarge,
                                                                 )
                                                             }
@@ -945,7 +926,7 @@ fun PlaylistScreen(
                                                                     Modifier
                                                                         .size(48.dp)
                                                                         .clip(CircleShape)
-                                                                        .background(Color(0xFF2A080D)),
+                                                                        .background(Color.White.copy(alpha = 0.12f)),
                                                                 contentAlignment = Alignment.Center,
                                                             ) {
                                                                 Crossfade(targetState = downloadState) { state ->
@@ -983,13 +964,7 @@ fun PlaylistScreen(
                                                                                         },
                                                                                 contentAlignment = Alignment.Center,
                                                                             ) {
-                                                                                Image(
-                                                                                    painter =
-                                                                                        rememberLottiePainter(
-                                                                                            composition = composition,
-                                                                                            iterations = Compottie.IterateForever,
-                                                                                        ),
-                                                                                    contentDescription = "Lottie animation",
+                                                                                DownloadingIndicator(
                                                                                     modifier = Modifier.size(28.dp),
                                                                                 )
                                                                             }
@@ -1198,12 +1173,7 @@ fun PlaylistScreen(
                         Modifier
                             .fillMaxWidth()
                             .onGloballyPositioned { searchBarHeightPx = it.size.height }
-                            .hazeEffect(hazeState) {
-                                blurEnabled = false
-                                blurRadius = 24.dp
-                                backgroundColor = mutedPaletteBg
-                                tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
-                            },
+                            .hazeBlur(HazeInput.Sources(hazeState), barBlurStyle(mutedPaletteBg, 0.55f)),
                     ) {
                         Row(
                             modifier =
@@ -1273,12 +1243,7 @@ fun PlaylistScreen(
                         },
                         onOpenActions = { showSelectionSheet = true },
                         modifier =
-                            Modifier.hazeEffect(hazeState) {
-                                blurEnabled = false
-                                blurRadius = 24.dp
-                                backgroundColor = mutedPaletteBg
-                                tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
-                            },
+                            Modifier.hazeBlur(HazeInput.Sources(hazeState), barBlurStyle(mutedPaletteBg, 0.55f)),
                     )
                 }
                 if (showSelectionSheet) {
@@ -1408,12 +1373,7 @@ fun PlaylistScreen(
                                 containerColor = Color.Transparent,
                             ),
                         modifier =
-                            Modifier.hazeEffect(hazeState) {
-                                blurEnabled = false
-                                blurRadius = 24.dp
-                                backgroundColor = mutedPaletteBg
-                                tints = listOf(HazeTint(mutedPaletteBg.copy(alpha = 0.55f)))
-                            },
+                            Modifier.hazeBlur(HazeInput.Sources(hazeState), barBlurStyle(mutedPaletteBg, 0.55f)),
                     )
                 }
             }

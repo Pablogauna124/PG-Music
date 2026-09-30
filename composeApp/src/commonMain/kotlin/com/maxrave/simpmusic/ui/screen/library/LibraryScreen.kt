@@ -86,10 +86,10 @@ import com.maxrave.simpmusic.ui.navigation.destination.home.ListenTogetherDestin
 import com.maxrave.simpmusic.ui.theme.typo
 import com.maxrave.simpmusic.viewModel.LibraryViewModel
 import com.maxrave.simpmusic.viewModel.SongSelectionViewModel
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.blur.hazeBlur
+import dev.chrisbanes.haze.blur.materials.HazeMaterials
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -119,7 +119,7 @@ import simpmusic.composeapp.generated.resources.your_library
 import simpmusic.composeapp.generated.resources.your_playlists
 import simpmusic.composeapp.generated.resources.your_youtube_playlists
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     innerPadding: PaddingValues,
@@ -150,9 +150,7 @@ fun LibraryScreen(
     var showSelectionAddToPlaylist by rememberSaveable { mutableStateOf(false) }
     val accountThumbnail by viewModel.accountThumbnail.collectAsStateWithLifecycle()
     val hazeState =
-        rememberHazeState(
-            blurEnabled = false,
-        )
+        rememberHazeState()
 
     var topAppBarHeight by remember {
         mutableStateOf(0.dp)
@@ -451,31 +449,17 @@ fun LibraryScreen(
     Column(
         Modifier
             .background(Color.Transparent)
-            .hazeEffect(hazeState, style = HazeMaterials.ultraThin()) {
-                blurEnabled = false
-            }.onGloballyPositioned { coordinates ->
+            .hazeBlur(HazeInput.Sources(hazeState), HazeMaterials.ultraThin().then { blurEnabled(true) }).onGloballyPositioned { coordinates ->
                 topAppBarHeight = with(density) { coordinates.size.height.toDp() }
             },
     ) {
         TopAppBar(
             title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        Modifier
-                            .width(4.dp)
-                            .height(26.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MaterialTheme.colorScheme.primary),
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = stringResource(Res.string.library),
-                        style = typo().headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
+                Text(
+                    text = stringResource(Res.string.library),
+                    style = typo().titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
             },
             colors =
                 TopAppBarDefaults.topAppBarColors(
@@ -493,7 +477,7 @@ fun LibraryScreen(
                             ImageRequest
                                 .Builder(LocalPlatformContext.current)
                                 .data(accountThumbnail)
-                                .crossfade(false)
+                                .crossfade(550)
                                 .build(),
                         placeholder = rememberVectorPainter(SimpIcons.PeopleAlt),
                         error = rememberVectorPainter(SimpIcons.PeopleAlt),
@@ -536,8 +520,8 @@ fun LibraryScreen(
             modifier =
                 Modifier
                     .horizontalScroll(chipRowState)
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = 6.dp)
+                    .padding(horizontal = 15.dp)
+                    .padding(bottom = 8.dp)
                     .background(Color.Transparent),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
