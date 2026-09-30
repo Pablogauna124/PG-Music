@@ -21,6 +21,7 @@ dependencyResolutionManagement {
         // (oss.sonatype.org) was removed — Sonatype shut it down and its flaky 504s
         // disabled the repo set, blocking fallback to this one.
         maven("https://central.sonatype.com/repository/maven-snapshots/")
+        maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
         maven("https://jogamp.org/deployment/maven")
         maven(url = "https://raw.githubusercontent.com/bravepipeproject/maven-repo/master/repository")
     }
