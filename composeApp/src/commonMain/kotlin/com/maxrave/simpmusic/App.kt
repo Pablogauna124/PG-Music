@@ -37,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -151,6 +152,8 @@ fun App(
     val sleepTimerState by viewModel.sleepTimerState.collectAsStateWithLifecycle()
     val nowPlayingData by viewModel.nowPlayingState.collectAsStateWithLifecycle()
     val updateResponse by viewModel.updateResponse.collectAsStateWithLifecycle()
+    val updateDownloadProgress by viewModel.updateDownloadProgress.collectAsStateWithLifecycle()
+    val updateErrorMessage by viewModel.updateErrorMessage.collectAsStateWithLifecycle()
     val updateData by viewModel.updateResponse.collectAsStateWithLifecycle()
     val intent by viewModel.intent.collectAsStateWithLifecycle()
     val showNotificationPermissionDialog by viewModel.showNotificationPermissionDialog.collectAsStateWithLifecycle()
@@ -744,9 +747,14 @@ fun App(
                 }
 
                 updateResponse?.let { update ->
+                    val isDownloading = updateDownloadProgress != null
+                    val progress = updateDownloadProgress ?: 0f
+
                     AlertDialog(
                         onDismissRequest = {
-                            viewModel.dismissUpdate()
+                            if (!isDownloading) {
+                                viewModel.dismissUpdate()
+                            }
                         },
                         shape = RoundedCornerShape(16.dp),
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -782,7 +790,7 @@ fun App(
                                     Spacer(modifier = Modifier.height(10.dp))
                                     Column(
                                         modifier = Modifier
-                                            .heightIn(max = 260.dp)
+                                            .heightIn(max = 220.dp)
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
@@ -799,41 +807,72 @@ fun App(
                                         )
                                     }
                                 }
+
+                                if (isDownloading) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = if (progress >= 1f) "Instalando actualización..." else "Descargando actualización: ${(progress * 100).toInt()}%",
+                                        style = typo().bodySmall.copy(fontWeight = FontWeight.Medium),
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    if (progress in 0f..1f && progress > 0f) {
+                                        LinearProgressIndicator(
+                                            progress = { progress },
+                                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                                        )
+                                    } else {
+                                        LinearProgressIndicator(
+                                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                                        )
+                                    }
+                                }
+
+                                updateErrorMessage?.let { error ->
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        text = error,
+                                        style = typo().bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
                             }
                         },
                         confirmButton = {
-                            Button(
-                                onClick = {
-                                    openUrl(update.downloadUrl)
-                                    viewModel.dismissUpdate()
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                ),
-                            ) {
-                                Text(
-                                    text = "Actualizar ahora",
-                                    style = typo().bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                                )
+                            if (!isDownloading) {
+                                Button(
+                                    onClick = {
+                                        viewModel.downloadAndInstallUpdate(update)
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                ) {
+                                    Text(
+                                        text = "Actualizar ahora",
+                                        style = typo().bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    )
+                                }
                             }
                         },
                         dismissButton = {
-                            TextButton(
-                                onClick = {
-                                    viewModel.dismissUpdate()
-                                },
-                            ) {
-                                Text(
-                                    text = "Más tarde",
-                                    style = typo().bodySmall,
-                                )
+                            if (!isDownloading) {
+                                TextButton(
+                                    onClick = {
+                                        viewModel.dismissUpdate()
+                                    },
+                                ) {
+                                    Text(
+                                        text = "Más tarde",
+                                        style = typo().bodySmall,
+                                    )
+                                }
                             }
                         },
                     )
                 }
-
                 if (showNotificationPermissionDialog || showDesktopNotificationPermissionDialog) {
                     var doNotShowAgain by remember { mutableStateOf(false) }
                     val dismissPermissionDialog = {

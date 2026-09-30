@@ -1,4 +1,14 @@
 package com.maxrave.simpmusic.viewModel
+import io.ktor.utils.io.readAvailable
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.request.get
+import com.maxrave.simpmusic.expect.getAppCacheDir
+import com.maxrave.simpmusic.expect.installDownloadedApk
+import io.ktor.client.plugins.onDownload
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.utils.io.core.isEmpty
+import io.ktor.utils.io.core.readBytes
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.viewModelScope
@@ -1113,9 +1123,69 @@ class SharedViewModel(
             }
         }
     }
+    private val _updateDownloadProgress = MutableStateFlow<Float?>(null)
+    val updateDownloadProgress: StateFlow<Float?> = _updateDownloadProgress
+
+    private val _updateErrorMessage = MutableStateFlow<String?>(null)
+    val updateErrorMessage: StateFlow<String?> = _updateErrorMessage
+
     fun dismissUpdate() {
         _updateResponse.value = null
+        _updateDownloadProgress.value = null
+        _updateErrorMessage.value = null
         showedUpdateDialog = false
+    }
+
+    fun downloadAndInstallUpdate(update: PgMusicUpdate) {
+        if (_updateDownloadProgress.value != null && _updateDownloadProgress.value!! >= 0f) return
+
+        viewModelScope.launch {
+            _updateDownloadProgress.value = 0f
+            _updateErrorMessage.value = null
+
+            try {
+                val cacheDir = getAppCacheDir()
+                val targetFile = java.io.File(cacheDir, update.assetName.ifEmpty { "pgmusic-update.apk" })
+                if (targetFile.exists()) {
+                    targetFile.delete()
+                }
+
+                val response: HttpResponse = pgMusicUpdateClient.get(update.downloadUrl) {
+                    onDownload { bytesSentTotal, contentLength ->
+                        if (contentLength != null && contentLength > 0) {
+                            _updateDownloadProgress.value = (bytesSentTotal.toFloat() / contentLength.toFloat()).coerceIn(0f, 1f)
+                        }
+                    }
+                }
+
+                val channel: ByteReadChannel = response.bodyAsChannel()
+                targetFile.outputStream().use { output ->
+                    val buffer = ByteArray(8192)
+                    while (!channel.isClosedForRead) {
+                        val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
+                        if (bytesRead <= 0) break
+                        output.write(buffer, 0, bytesRead)
+                    }
+                }
+
+                _updateDownloadProgress.value = 1f
+
+                installDownloadedApk(
+                    apkPath = targetFile.absolutePath,
+                    onRequiresPermission = {
+                        _updateErrorMessage.value = "Habilita el permiso para instalar aplicaciones desconocidas."
+                    },
+                    onError = { err ->
+                        _updateErrorMessage.value = "Error al iniciar instalador: ${err.message}"
+                        _updateDownloadProgress.value = null
+                    }
+                )
+            } catch (e: Exception) {
+                Logger.e("PGMusicUpdater", "Error descargando actualización: ${e.message}")
+                _updateErrorMessage.value = "Error en la descarga: ${e.message}"
+                _updateDownloadProgress.value = null
+            }
+        }
     }
 
     fun checkOfficialBuild(

@@ -1,5 +1,6 @@
 package com.maxrave.simpmusic.update
 
+import com.maxrave.simpmusic.expect.getDeviceAbi
 import com.maxrave.simpmusic.utils.VersionManager
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -16,6 +17,7 @@ data class PgMusicReleaseAsset(
     val name: String,
     @SerialName("browser_download_url")
     val browserDownloadUrl: String,
+    val size: Long = 0L,
 )
 
 @Serializable
@@ -37,12 +39,14 @@ data class PgMusicUpdate(
     val releaseNotes: String,
     val publishedAt: String?,
     val downloadUrl: String,
+    val assetName: String,
+    val assetSize: Long = 0L,
 )
 
 object PgMusicUpdateManager {
 
     private const val LATEST_RELEASE_URL =
-        "https://api.github.com/repos/Pablogauna124/PG-Music-Releases/releases/latest"
+        "https://api.github.com/repos/Pablogauna124/PG-Music/releases/latest"
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -58,7 +62,7 @@ object PgMusicUpdateManager {
             }
 
         if (!response.status.isSuccess()) {
-            error("GitHub respondio con HTTP ${response.status.value}")
+            return null
         }
 
         val rawBody: String = response.body()
@@ -75,21 +79,42 @@ object PgMusicUpdateManager {
             return null
         }
 
-        val universalAsset =
-            release.assets.firstOrNull { asset ->
-                asset.name.equals(
-                    "PG-Music-v$remoteVersion-universal.apk",
-                    ignoreCase = true,
-                )
-            } ?: return null
+        val chosenAsset = selectBestAsset(release.assets) ?: return null
 
         return PgMusicUpdate(
             version = remoteVersion,
             releaseName = release.name ?: "PG Music $remoteVersion",
             releaseNotes = release.body.orEmpty(),
             publishedAt = release.publishedAt,
-            downloadUrl = universalAsset.browserDownloadUrl,
+            downloadUrl = chosenAsset.browserDownloadUrl,
+            assetName = chosenAsset.name,
+            assetSize = chosenAsset.size,
         )
+    }
+
+    internal fun selectBestAsset(assets: List<PgMusicReleaseAsset>): PgMusicReleaseAsset? {
+        val apkAssets = assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
+        if (apkAssets.isEmpty()) return null
+
+        val deviceAbi = getDeviceAbi()?.lowercase().orEmpty()
+
+        if (deviceAbi.isNotEmpty()) {
+            val abiMatch = apkAssets.firstOrNull { it.name.lowercase().contains(deviceAbi) }
+            if (abiMatch != null) return abiMatch
+
+            if (deviceAbi.contains("arm64")) {
+                val v8 = apkAssets.firstOrNull { it.name.lowercase().contains("v8a") || it.name.lowercase().contains("arm64") }
+                if (v8 != null) return v8
+            } else if (deviceAbi.contains("v7a") || deviceAbi.contains("arm")) {
+                val v7 = apkAssets.firstOrNull { it.name.lowercase().contains("v7a") || it.name.lowercase().contains("armeabi") }
+                if (v7 != null) return v7
+            }
+        }
+
+        val universal = apkAssets.firstOrNull { it.name.lowercase().contains("universal") }
+        if (universal != null) return universal
+
+        return apkAssets.firstOrNull()
     }
 
     internal fun normalizeVersion(version: String): String =
