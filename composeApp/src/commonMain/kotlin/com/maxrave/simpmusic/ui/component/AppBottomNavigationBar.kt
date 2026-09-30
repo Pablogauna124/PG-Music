@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -111,27 +110,10 @@ fun AppBottomNavigationBar(
     // Search rides in its own circular button, so the capsule holds everything else.
     val barTabs = bottomNavScreens.filter { it != BottomNavScreen.Search }
 
-<<<<<<< HEAD
-    // The translucent switch tints the CAPSULE ITSELF, never a strip behind it — the area around
-    // the floating cluster always shows the page. ON reads the content through the pill; OFF is a
-    // solid surface. The indicator stays nearer opaque so the selection survives busy artwork.
-    // PG Music: navegación OLED con selección roja discreta.
-    val capsuleColor =
-        if (isTranslucentBackground) {
-            Color.Black.copy(alpha = 0.82f)
-        } else {
-            Color.Black
-        }
-    val indicatorColor =
-        MaterialTheme.colorScheme.primary.copy(
-            alpha = if (isTranslucentBackground) 0.16f else 0.13f,
-        )
-=======
     // 85%: the page shows faintly through the floating cluster (the capsule and the search button);
     // the indicator stays opaque so the selection survives busy artwork.
     val capsuleColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f)
     val indicatorColor = MaterialTheme.colorScheme.surfaceContainerHighest
->>>>>>> upstream/main
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -170,12 +152,7 @@ fun AppBottomNavigationBar(
                                 .offset(x = indicatorOffset)
                                 .size(width = tabWidth, height = FlatIndicatorHeight)
                                 .clip(RoundedCornerShape(FlatIndicatorHeight / 2))
-                                .background(indicatorColor)
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.65f),
-                                    shape = RoundedCornerShape(FlatIndicatorHeight / 2),
-                                ),
+                                .background(indicatorColor),
                     )
                 }
                 Row {
@@ -219,17 +196,6 @@ fun AppBottomNavigationBar(
                     .size(FlatIndicatorHeight)
                     .clip(CircleShape)
                     .background(if (searchSelected) indicatorColor else capsuleColor)
-                    .then(
-                        if (searchSelected) {
-                            Modifier.border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.65f),
-                                shape = CircleShape,
-                            )
-                        } else {
-                            Modifier
-                        },
-                    )
                     .clickable { selectTab(BottomNavScreen.Search) },
             contentAlignment = Alignment.Center,
         ) {

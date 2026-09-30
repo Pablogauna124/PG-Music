@@ -1113,35 +1113,18 @@ class SharedViewModel(
             }
         }
     }
-
     fun dismissUpdate() {
         _updateResponse.value = null
         showedUpdateDialog = false
     }
-    /**
-     * [signingCerts]: SHA-256 hex of each certificate this APK is signed with. A failed fetch leaves
-     * the app usable — it plays offline, and an unknown answer must not lock out our own users.
-     */
+
     fun checkOfficialBuild(
         packageName: String,
         signingCerts: List<String>,
     ) {
-        if (packageName !in Config.OFFICIAL_PACKAGE_NAMES) {
-            _isOfficialBuild.value = false
-            return
-        }
-        viewModelScope.launch {
-            updateRepository.getFdroidSigningKeys().collect { response ->
-                val keys = response.data
-                // No certificate read at all is an unknown answer, and unknown never blocks.
-                if (response is Resource.Success && keys != null && signingCerts.isNotEmpty() && keys.none { it in signingCerts }) {
-                    _isOfficialBuild.value = false
-                }
-            }
-        }
+        // PG Music fork: no-op validation
     }
-
-    fun stopPlayer() {
+fun stopPlayer() {
         _nowPlayingScreenData.value = NowPlayingScreenData.initial()
         _nowPlayingState.value = null
         mediaPlayerHandler.resetSongAndQueue()

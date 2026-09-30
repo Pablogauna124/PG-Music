@@ -138,10 +138,7 @@ import com.maxrave.simpmusic.viewModel.HomeViewModel.Companion.HOME_PARAMS_SLEEP
 import com.maxrave.simpmusic.viewModel.HomeViewModel.Companion.HOME_PARAMS_WORKOUT
 import com.maxrave.simpmusic.viewModel.ListState
 import com.maxrave.simpmusic.viewModel.SharedViewModel
-import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -184,7 +181,7 @@ private val listOfHomeChip =
         Res.string.commute, Res.string.focus,
     )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @ExperimentalFoundationApi
 @Composable
 fun HomeScreen(
@@ -227,7 +224,7 @@ fun HomeScreen(
     var showRequestShareLyricsPermissions by rememberSaveable { mutableStateOf(false) }
     var showFootgunsDialog by rememberSaveable { mutableStateOf(false) }
     var topAppBarHeightPx by rememberSaveable { mutableIntStateOf(0) }
-    val hazeState = rememberHazeState(blurEnabled = false)
+    val hazeState = rememberHazeState()
 
     LaunchedEffect(scrollState) {
         snapshotFlow { scrollState.firstVisibleItemIndex }.collect {
@@ -418,7 +415,7 @@ fun HomeScreen(
             Column(
                 modifier = Modifier.align(Alignment.TopCenter).then(
                     if (target) Modifier.background(Color.Transparent)
-                    else Modifier.hazeEffect(hazeState, style = HazeMaterials.ultraThin()) { blurEnabled = false },
+                    else Modifier.background(MaterialTheme.colorScheme.surface),
                 ).onGloballyPositioned { topAppBarHeightPx = it.size.height },
             ) {
                 AnimatedVisibility(visible = isScrollingUp, enter = androidx.compose.animation.EnterTransition.None, exit = androidx.compose.animation.ExitTransition.None) {
