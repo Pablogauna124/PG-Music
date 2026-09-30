@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -51,10 +50,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -67,18 +67,22 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.kyant.backdrop.highlight.Highlight
 import com.maxrave.common.Config.MAIN_PLAYER
 import com.maxrave.domain.mediaservice.handler.RepeatState
 import com.maxrave.simpmusic.Platform
-import com.maxrave.simpmusic.getPlatform
 import com.maxrave.simpmusic.expect.ui.DeviceVolumeController
 import com.maxrave.simpmusic.expect.ui.MediaPlayerView
 import com.maxrave.simpmusic.expect.ui.MediaPlayerViewWithSubtitle
+import com.maxrave.simpmusic.expect.ui.layerBackdrop
+import com.maxrave.simpmusic.expect.ui.rememberBackdrop
 import com.maxrave.simpmusic.expect.ui.rememberDeviceVolumeController
 import com.maxrave.simpmusic.expect.ui.toImageBitmap
 import com.maxrave.simpmusic.extension.getScreenSizeInfo
 import com.maxrave.simpmusic.extension.smoothScrimBrush
+import com.maxrave.simpmusic.getPlatform
 import com.maxrave.simpmusic.ui.component.ExplicitBadge
+import com.maxrave.simpmusic.ui.component.LiquidGlassIconButton
 import com.maxrave.simpmusic.ui.component.rememberHolderPainter
 import com.maxrave.simpmusic.ui.screen.player.content.applemusic.AppleMusicBottomCluster
 import com.maxrave.simpmusic.ui.screen.player.content.applemusic.AppleMusicHeaderActions
@@ -97,8 +101,10 @@ import com.maxrave.simpmusic.ui.screen.player.content.applemusic.appleMusicVerti
 import com.maxrave.simpmusic.ui.screen.player.content.applemusic.rememberAppleMusicTypography
 import com.maxrave.simpmusic.ui.theme.seed
 import com.maxrave.simpmusic.ui.theme.typo
+import com.maxrave.simpmusic.viewModel.SharedViewModel
 import com.maxrave.simpmusic.viewModel.UIEvent
 import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
 
 /**
  * The Apple Music Now Playing style: a style-internal dock (Lyrics · Cast · Queue) swaps the
@@ -113,15 +119,35 @@ fun NowPlayingContentAppleMusic(
     state: NowPlayingContentState,
     actions: NowPlayingContentActions,
 ) {
-    var viewState by rememberSaveable { mutableStateOf(AppleMusicView.MAIN) }
+    // Seeded from the view model, not from MAIN: this player lives in a ModalBottomSheet, so
+    // dismissing it disposes the tree and rememberSaveable dies with it. rememberSaveable is still
+    // the right holder WITHIN a session (it survives rotation without a round trip), the view model
+    // just supplies where the user was last.
+    val sharedViewModel: SharedViewModel = koinInject()
+    var viewState by rememberSaveable {
+        mutableStateOf(
+            sharedViewModel.lastPlayerViewTab.value
+                ?.let { saved -> AppleMusicView.entries.firstOrNull { it.name == saved } }
+                ?: AppleMusicView.MAIN,
+        )
+    }
+    LaunchedEffect(viewState) { sharedViewModel.setLastPlayerViewTab(viewState.name) }
 
-    // Lyrics can disappear mid-session (provider swap gone offline, track change while on this
-    // tab) — fall back to MAIN rather than stranding the user on an empty body, matching the
-    // dock's own disabled-Lyrics-button gate.
-    LaunchedEffect(state.screenData.lyricsData) {
-        if (viewState == AppleMusicView.LYRICS && state.screenData.lyricsData == null) {
-            viewState = AppleMusicView.MAIN
-        }
+    // Lyrics can disappear mid-session (provider swap gone offline, a track that simply has none)
+    // — fall back to MAIN rather than stranding the user on an empty body, matching the dock's own
+    // disabled-Lyrics-button gate.
+    //
+    // The wait is the whole point. Every track change rebuilds NowPlayingScreenData from scratch
+    // with lyricsData = null and only THEN fetches (SharedViewModel.kt:342), so "null" is the
+    // normal state of every song for as long as the request takes. Reacting to it immediately —
+    // which is what this did — threw the user out of the lyrics tab on every single skip, even
+    // when the incoming track had lyrics arriving a moment later. Lyrics landing restarts this
+    // effect and cancels the wait, so the fallback only ever fires for a track that really has
+    // none.
+    LaunchedEffect(state.screenData.lyricsData, viewState) {
+        if (viewState != AppleMusicView.LYRICS || state.screenData.lyricsData != null) return@LaunchedEffect
+        delay(LYRICS_ABSENCE_GRACE_MS)
+        viewState = AppleMusicView.MAIN
     }
 
     // This style has no scroll and no collapsed toolbar (unlike Classic/M3E); park the shared
@@ -129,6 +155,18 @@ fun NowPlayingContentAppleMusic(
     LaunchedEffect(Unit) {
         actions.onToolbarVisibilityChange(false)
     }
+
+    // The artwork bitmap feeds BOTH the frosted backdrop below and the palette every colour on
+    // this page is derived from. The only thing that ever supplied it is the AsyncImage inside the
+    // artwork pager, which lives in MAIN — and the Crossfade composes exactly one body, so on
+    // QUEUE or LYRICS that pager does not exist. Changing track there fed nothing, and the page
+    // fell back to a flat gradient.
+    //
+    // The loader below sits OUTSIDE the Crossfade so it covers every body, and it is an AsyncImage
+    // rather than an imperative ImageLoader.execute(): the pager's AsyncImage demonstrably loads
+    // this exact url while the execute() call did not, so this uses the path already proven to
+    // work rather than a second one that has to be kept working.
+    var backdropUrl by remember(state.screenData.thumbnailURL) { mutableStateOf(state.screenData.thumbnailURL) }
 
     val paletteColor = state.startColor.value
     val seedColor = if (paletteColor == Color.Black) seed else paletteColor
@@ -154,16 +192,75 @@ fun NowPlayingContentAppleMusic(
 
     val deviceVolumeController = rememberDeviceVolumeController()
     val typography = rememberAppleMusicTypography()
+    val localDensity = LocalDensity.current
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                // Flat black only for a CANVAS (it fills the screen). A video letterboxes, so a
-                // black page turns the bars above and below it into dead black slabs — keep the
-                // artwork-tinted gradient there.
-                .background(if (showCanvasBackdrop && !isVideoBackdropTop) SolidColor(Color.Black) else backdropBrush),
-    ) {
+    // The canvas page is black and every other state is the artwork gradient — but the swap must
+    // NOT be instant. viewState flips the moment a tab is tapped, while the Crossfade below still
+    // spends 300ms fading MAIN out: a hard swap repaints the page bright underneath a canvas that
+    // is still on screen, which is the flicker when leaving MAIN for Queue/Lyrics and again on the
+    // way back. Fading the black layer on the SAME 300ms curve keeps the two in step.
+    val canvasBackdropAlpha by animateFloatAsState(
+        targetValue = if (showCanvasBackdrop && !isVideoBackdropTop) 1f else 0f,
+        animationSpec = tween(300),
+        label = "appleMusicCanvasBackdrop",
+    )
+
+    // Backdrop source for the Desktop dismiss button below. The glass layers MUST be a sibling of
+    // the button, never its parent: nesting the button inside the source is the render-feedback
+    // loop that crashes the RuntimeShader.
+    val panelBackdrop = rememberBackdrop(Color.Black)
+
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        Box(modifier = Modifier.matchParentSize().layerBackdrop(panelBackdrop)) {
+            // Apple frosts the COVER ART into the page background — the colour and the soft blotches
+            // of the artwork stay visible through it. A flat tinted gradient, which is what this used
+            // to be, gets the hue right and loses everything else: the page reads as a solid colour
+            // swatch rather than as the record it belongs to.
+            //
+            // Loaded straight from the url by AsyncImage rather than through the screen state's
+            // decoded bitmap. The background IS an image, so there is no reason to route it through a
+            // bitmap someone else has to remember to fill in — which is exactly what broke: the only
+            // thing feeding that bitmap was the artwork pager inside MAIN, so on QUEUE or LYRICS a
+            // track change left it null and the page fell back to a bare gradient.
+            //
+            // The palette still needs a bitmap, and it comes off this same load. One source, so the
+            // frosted art and the tint over it cannot end up belonging to different songs.
+            //
+            // The heavy blur radius is safe because the whole style is gated behind Android 12 for
+            // exactly this reason (isLyricsBlurSupported), and Crop + fillMaxSize means the artwork is
+            // scaled far past its own resolution — at this blur that costs nothing visually.
+            if (!backdropUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model =
+                        ImageRequest
+                            .Builder(LocalPlatformContext.current)
+                            .data(backdropUrl)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .diskCacheKey(backdropUrl + "BIGGER")
+                            .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    onSuccess = { actions.onArtworkBitmap(it.result.image.toImageBitmap()) },
+                    // Same fallback the artwork pager carries: maxresdefault is missing for plenty of
+                    // videos, and without this the page would simply stay black.
+                    onError = {
+                        val fallback = backdropUrl?.replace("maxresdefault", "hqdefault")
+                        if (fallback != null && fallback != backdropUrl) backdropUrl = fallback
+                    },
+                    modifier = Modifier.fillMaxSize().blur(BACKDROP_BLUR_RADIUS, BlurredEdgeTreatment.Unbounded),
+                )
+            }
+            // The tint still rides on top, but as a translucent wash rather than the whole background:
+            // it keeps the vertical darkening that makes the controls readable at the bottom, while the
+            // frosted artwork shows through it.
+            Box(modifier = Modifier.fillMaxSize().alpha(BACKDROP_TINT_ALPHA).background(backdropBrush))
+            // Flat black only for a CANVAS (it fills the screen). A video letterboxes, so a black page
+            // turns the bars above and below it into dead black slabs — keep the artwork-tinted
+            // gradient there.
+            if (canvasBackdropAlpha > 0f) {
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = canvasBackdropAlpha)))
+            }
+        }
         Crossfade(targetState = viewState, animationSpec = tween(300), label = "appleMusicView") { view ->
             when (view) {
                 AppleMusicView.MAIN ->
@@ -202,6 +299,59 @@ fun NowPlayingContentAppleMusic(
                         activePillContent = activePillContent,
                         deviceVolumeController = deviceVolumeController,
                     )
+            }
+        }
+
+        // How the page is dismissed, and it differs by platform because the page itself does.
+        //
+        // On Android this is a bottom sheet, so a grabber is the native way out and tapping it
+        // dismisses. On Desktop the same content is a side panel that never slides anywhere — a
+        // grabber there is a handle for a gesture that does not exist, which is why this style
+        // shipped with no visible way to close the panel at all while Classic and M3 Expressive
+        // both draw state.dismissIcon in their top bar.
+        // MAIN only: Queue and Lyrics each have their own header, and a floating button over
+        // those reads as belonging to the list rather than to the panel.
+        if (getPlatform() == Platform.Desktop) {
+            if (viewState == AppleMusicView.MAIN) {
+                LiquidGlassIconButton(
+                    backdrop = panelBackdrop,
+                    imageVector = state.dismissIcon,
+                    shape = RoundedCornerShape(24.dp),
+                    // Same as AnalyticsScreen's back button: a 48dp circle catches only a short arc
+                    // of the default directional sweep and reads as rimless. 1.dp is the smallest
+                    // step that stays visible without looking like a plain border.
+                    highlight = Highlight(width = 1.dp),
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(12.dp)
+                            .size(48.dp),
+                    onClick = { actions.onDismiss() },
+                )
+            }
+        } else {
+            // Grabber. It sits ABOVE the Crossfade, not inside a view, so it stays put across a tab
+            // switch instead of fading with the body — and so Queue/Lyrics get it too. The shell's
+            // ModalBottomSheet passes dragHandle = {} for every style, so nothing above this draws one.
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = with(localDensity) { WindowInsets.statusBars.getTop(localDensity).toDp() })
+                        .size(width = 64.dp, height = 28.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                        ) { actions.onDismiss() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(width = 36.dp, height = 5.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.White.copy(alpha = 0.35f)),
+                )
             }
         }
     }
@@ -291,13 +441,26 @@ private fun AppleMusicMainView(
             )
         }
 
-        // Top scrim while canvas/video plays — the mock has one; without it the status bar and
-        // grabber float unreadably on a bright canvas.
-        if (showCanvasBackdrop) {
+        // Top scrim, CANVAS ONLY — same rule the flat black backdrop above follows: a canvas
+        // replaces the whole page, so the status bar and grabber would otherwise float on raw
+        // picture; a video letterboxes and the strip around it is still the artwork gradient,
+        // which is exactly what a plain-artwork track's controls already sit on. Painting these
+        // over a video only dimmed the picture — measured on a 480x830 panel, the top 25% of the
+        // 16:9 frame under up to 0.20 black and the bottom 20% under up to 0.22.
+        //
+        // Rides controlsAlpha, like the scrim below it. A scrim is an accessory of the CONTROLS,
+        // not of the canvas: gating it on showCanvasBackdrop alone left both scrims painted at full
+        // strength after the controls auto-hid, so 82% of the screen height stayed covered — 0.55
+        // black down to y=22%, then 0.45 at y=53% ramping to 0.97 at the bottom — with nothing left
+        // underneath them to make readable. That is the whole of "đen thui cả canvas". The idle
+        // overlay that replaces the controls carries its own page-tint scrim, so the bottom stays
+        // readable without these.
+        if (showCanvasBackdrop && !isVideoBackdrop && controlsAlpha > 0f) {
             Box(
                 modifier =
                     Modifier
                         .align(Alignment.TopCenter)
+                        .alpha(controlsAlpha)
                         .fillMaxWidth()
                         .fillMaxHeight(0.22f)
                         .background(
@@ -309,29 +472,17 @@ private fun AppleMusicMainView(
             )
         }
 
-        // Dismiss target where the grabber pill used to be drawn: the tap area stays (this style
-        // has no top app bar), the visible bar is gone at the owner's request.
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = with(localDensity) { WindowInsets.statusBars.getTop(localDensity).toDp() })
-                    .size(width = 64.dp, height = 28.dp)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                    ) { actions.onDismiss() },
-        )
-
         // Owner's spec, verbatim: a BLACK→TRANSPARENT gradient under the title row + cluster
-        // while canvas/video plays — solid black at the very bottom, fading out upward.
+        // while a canvas plays — solid black at the very bottom, fading out upward.
         // Height is a FRACTION of this Box, never a dp computed from screenInfo: a zero/stale
         // hDP silently collapsed this scrim to nothing, which is why it kept "not existing".
-        if (showCanvasBackdrop) {
+        // Canvas only, for the reason spelled out on the top scrim.
+        if (showCanvasBackdrop && !isVideoBackdrop && controlsAlpha > 0f) {
             Box(
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
+                        .alpha(controlsAlpha)
                         .fillMaxWidth()
                         .fillMaxHeight(0.6f)
                         .background(
@@ -399,14 +550,25 @@ private fun AppleMusicMainView(
                                 ),
                         contentAlignment = Alignment.BottomStart,
                     ) {
+                        // The page's OWN colour, not black. This scrim is what the artwork fades
+                        // INTO, so it has to be the same tone the page is painted with below it —
+                        // appleMusicGradientColorAt(seed, 1f), i.e. the thumbnail's colour darkened,
+                        // exactly like the bottom stop of backdropBrush. Fading to black instead
+                        // laid a dark slab over a tinted page and left a visible seam where the two
+                        // met, which read as "black smudge into transparent".
+                        //
+                        // Fully opaque at the bottom for the same reason: at 0.85 the artwork still
+                        // showed through the last few pixels and tinted the seam a different colour
+                        // than the page continuing beneath it.
+                        val pageScrimColor = appleMusicGradientColorAt(seedColor, 1f)
                         Box(
                             modifier =
                                 Modifier
                                     .fillMaxSize()
                                     .background(
                                         smoothScrimBrush(
-                                            from = Color.Black.copy(alpha = 0f),
-                                            to = Color.Black.copy(alpha = 0.85f),
+                                            from = pageScrimColor.copy(alpha = 0f),
+                                            to = pageScrimColor,
                                         ),
                                     ),
                         )
@@ -471,9 +633,10 @@ private fun AppleMusicMainView(
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            // The DEFAULT style shows its full NowPlayingTrackInfoRow here — 55dp thumbnail,
-                            // titleMedium over bodyMedium, and the ⊕ / ☆ / ⋯ actions. This is that row, not a
-                            // stripped-down copy of it.
+                            // The DEFAULT style shows its full NowPlayingTrackInfoRow here — 55dp thumbnail
+                            // and the ⊕ / ☆ / ⋯ actions. This is that row, not a stripped-down copy of it.
+                            // It types with the COMPACT slots, not the main ones: this is a track header
+                            // floating over a canvas, the same job the Lyrics/Queue header does.
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -497,7 +660,7 @@ private fun AppleMusicMainView(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = state.screenData.nowPlayingTitle,
-                                        style = typography.mainTitle,
+                                        style = typography.compactTitle,
                                         maxLines = 1,
                                         modifier =
                                             Modifier
@@ -508,7 +671,7 @@ private fun AppleMusicMainView(
                                     Spacer(modifier = Modifier.height(3.dp))
                                     Text(
                                         text = state.screenData.artistName,
-                                        style = typography.mainArtist,
+                                        style = typography.compactArtist,
                                         maxLines = 1,
                                         modifier =
                                             Modifier
@@ -746,22 +909,22 @@ private fun AppleMusicArtworkPage(
                     Crossfade(targetState = state.screenData.canvasData?.isVideo, label = "appleMusicCanvasKind") { isVideo ->
                         if (isVideo == true) {
                             state.screenData.canvasData?.url?.let { url ->
-                                // Default style's canvas modifiers, verbatim (fill the height,
-                                // let the width overflow centred — no stretching).
+                                // cropToBounds, NOT the default style's fill-height-and-overflow
+                                // modifiers. Those drive MediaPlayerView's legacy path, which sizes
+                                // the surface from a `widthPx` seeded to the SCREEN width and only
+                                // corrects it once onVideoSizeChanged reports the real aspect ratio.
+                                // For a 9:16 canvas the true width is far wider than the screen, so
+                                // the first frame renders fitted and the next one jumps to cropped —
+                                // the sideways flash when returning from the Lyrics tab, where the
+                                // Crossfade had disposed this whole subtree and every remember with
+                                // it. The crop path takes its size from Media3's own
+                                // presentationState instead, so there is no wrong guess to correct,
+                                // and it holds a shutter over the surface until the first frame is
+                                // actually ready.
                                 MediaPlayerView(
                                     url = url,
-                                    modifier =
-                                        Modifier
-                                            .fillMaxHeight()
-                                            .then(
-                                                if (getPlatform() == Platform.Desktop) {
-                                                    Modifier
-                                                } else {
-                                                    Modifier
-                                                        .wrapContentWidth(unbounded = true, align = Alignment.CenterHorizontally)
-                                                        .align(Alignment.Center)
-                                                },
-                                            ),
+                                    cropToBounds = true,
+                                    modifier = Modifier.fillMaxSize(),
                                 )
                             }
                         } else if (isVideo == false) {
@@ -825,3 +988,18 @@ private fun AppleMusicArtworkPage(
         }
     }
 }
+
+// Radius of the frosted cover art behind the page. Large enough that no detail of the artwork
+// survives as a shape — what is left is its colour and its broad light and dark areas, which is
+// precisely what Apple's background is.
+private val BACKDROP_BLUR_RADIUS = 80.dp
+
+// How much of the artwork-derived gradient sits over the frosted art. Enough to darken the page
+// towards the bottom so the transport stays readable; not so much that it hides the art again.
+private const val BACKDROP_TINT_ALPHA = 0.62f
+
+// How long the LYRICS tab waits for a track's lyrics before deciding the track has none. Long
+// enough to cover a normal fetch on a normal connection, short enough that a song with no lyrics
+// does not leave the user staring at an empty page. Not a fixed budget for the request itself:
+// lyrics arriving at any point cancel the wait outright.
+private const val LYRICS_ABSENCE_GRACE_MS = 2_500L

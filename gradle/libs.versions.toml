@@ -1,6 +1,6 @@
 [versions]
 # App version
-version-name = "2.0.1"
+version-name = "2.1.0"
 version-code = "58"
 
 android = "9.2.1"
@@ -42,6 +42,11 @@ aboutlibraries = "15.0.2" # BUG Can not upgrade version
 ktor = "3.5.2"
 brotli = "0.1.2"
 ksoup = "0.6.0"
+# Lyrics romanization. Both are plain Java, so one dependency covers Android AND the JVM desktop
+# build; iOS gets a no-op actual instead. Versions match what Metrolist ships, which is the
+# reference implementation for this feature.
+kuromoji-ipadic = "0.9.0"
+pinyin4j = "2.5.1"
 desugaring = "2.1.5"
 koin-bom = "4.2.2"
 md = "0.44.0"
@@ -59,6 +64,8 @@ brave-newpipe = "0fcaf19ecc"
 # org.json ships with the Android SDK but is absent on JVM desktop; PipePipeExtractor references it.
 org-json = "20231013" # pin version
 pipepipe = "f8982ca9e7"
+# QuickJS binding for KMP — runs YouTube's player JS to solve sig/n challenges locally.
+quickjs = "1.0.14"
 webkit = "1.17.0"
 kermit = "2.1.0"
 paging-common = "3.5.1"
@@ -174,6 +181,8 @@ brotli-dec = { group = "org.brotli", name = "dec", version.ref = "brotli" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test"}
+kuromoji-ipadic = { module = "com.atilika.kuromoji:kuromoji-ipadic", version.ref = "kuromoji-ipadic" }
+pinyin4j = { module = "com.belerweb:pinyin4j", version.ref = "pinyin4j" }
 ksoup-html = { group = "com.mohamedrejeb.ksoup", name = "ksoup-html", version.ref = "ksoup" }
 ksoup-entities = { group = "com.mohamedrejeb.ksoup", name = "ksoup-entities", version.ref = "ksoup" }
 markdown = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "md" }
@@ -187,6 +196,7 @@ newpipe-extractor = { module = "com.github.teamnewpipe:NewPipeExtractor", versio
 brave-extractor = { module = "com.github.maxrave-dev:BravePipeExtractor", version.ref = "brave-newpipe" }
 org-json = { module = "org.json:json", version.ref = "org-json" }
 pipepipe-extractor = { module = "com.github.maxrave-dev:PipePipeExtractor", version.ref = "pipepipe" }
+quickjs = { module = "io.github.dokar3:quickjs-kt", version.ref = "quickjs" }
 #leak-canary = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
 kermit-logging = { module = "co.touchlab:kermit", version.ref = "kermit" }
 glance = { group = "androidx.glance", name = "glance", version.ref = "glance" }

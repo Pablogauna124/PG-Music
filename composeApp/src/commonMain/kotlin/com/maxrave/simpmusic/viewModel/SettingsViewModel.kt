@@ -11,7 +11,9 @@ import com.maxrave.common.SELECTED_LANGUAGE
 import com.maxrave.common.VIDEO_QUALITY
 import com.maxrave.domain.data.entities.DownloadState
 import com.maxrave.domain.data.entities.GoogleAccountEntity
+import com.maxrave.domain.data.model.lyrics.RomanizationDictionaryState
 import com.maxrave.domain.data.player.GenericCastState
+import com.maxrave.domain.data.player.ReverbPreset
 import com.maxrave.domain.extension.toNetScapeString
 import com.maxrave.domain.manager.DataStoreManager
 import com.maxrave.domain.mediaservice.handler.DownloadHandler
@@ -19,6 +21,7 @@ import com.maxrave.domain.repository.AccountRepository
 import com.maxrave.domain.repository.ArtistRepository
 import com.maxrave.domain.repository.CacheRepository
 import com.maxrave.domain.repository.CommonRepository
+import com.maxrave.domain.repository.LyricsRomanizerRepository
 import com.maxrave.domain.repository.SongRepository
 import com.maxrave.domain.utils.LocalResource
 import com.maxrave.logger.LogLevel
@@ -60,6 +63,8 @@ import simpmusic.composeapp.generated.resources.error
 import simpmusic.composeapp.generated.resources.log_out_confirm_message
 import simpmusic.composeapp.generated.resources.restore_failed
 import simpmusic.composeapp.generated.resources.restore_in_progress
+import simpmusic.composeapp.generated.resources.romanization_japanese_dict_failed
+import simpmusic.composeapp.generated.resources.romanization_japanese_dict_ready
 import simpmusic.composeapp.generated.resources.warning
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -70,11 +75,16 @@ class SettingsViewModel(
     private val accountRepository: AccountRepository,
     private val cacheRepository: CacheRepository,
     private val artistRepository: ArtistRepository,
+    private val lyricsRomanizerRepository: LyricsRomanizerRepository,
 ) : BaseViewModel() {
     private val databasePath: String? = commonRepository.getDatabasePath()
     private val downloadUtils: DownloadHandler by inject()
 
     val castState: StateFlow<GenericCastState> get() = mediaPlayerHandler.castState
+
+    /** READY everywhere the dictionary is bundled (Desktop), so only Android ever leaves it. */
+    val japaneseDictionaryState: StateFlow<RomanizationDictionaryState> =
+        lyricsRomanizerRepository.japaneseDictionaryState
 
     private var _location: MutableStateFlow<String?> = MutableStateFlow(null)
     val location: StateFlow<String?> = _location
@@ -288,7 +298,9 @@ class SettingsViewModel(
         getSpotifyLyrics()
         getSyncFollowToYouTube()
         getEqualizer()
+        getAudioEffects()
         getSpotifyCanvas()
+        getAMAnimatedArtwork()
         getUsingProxy()
         getCanvasCache()
         getTranslucentBottomBar()
@@ -367,11 +379,7 @@ class SettingsViewModel(
     private fun getDownloadQuality() {
         viewModelScope.launch {
             dataStoreManager.downloadQuality.collect { quality ->
-                if (QUALITY.items.any { it.toString() == quality }) {
-                    _downloadQuality.emit(quality)
-                } else {
-                    _downloadQuality.emit(QUALITY.items[0].toString())
-                }
+                _downloadQuality.emit(QUALITY.normalize(quality))
             }
         }
     }
@@ -559,6 +567,10 @@ class SettingsViewModel(
     fun logOutLastfm() {
         viewModelScope.launch {
             dataStoreManager.setLastfmSession(sessionKey = "", username = "")
+            // Scrobbling is gated on the session, so logging out must clear it here — the same
+            // teardown setSpotifyLogIn and logOutDiscord already do. Doing it from the Settings
+            // row instead only works if the user happens to open Settings and scroll to that row.
+            dataStoreManager.setLastfmScrobbleEnabled(false)
         }
     }
 
@@ -833,6 +845,11 @@ class SettingsViewModel(
     fun setAIApiKey(apiKey: String) {
         viewModelScope.launch {
             dataStoreManager.setAIApiKey(apiKey)
+            // An empty key IS the sign-out here — isHasApiKey is derived from aiApiKey.isNotEmpty()
+            // — so AI translation, which is gated on it, has to come off with it.
+            if (apiKey.isEmpty()) {
+                dataStoreManager.setUseAITranslation(false)
+            }
             getAIApiKey()
         }
     }
@@ -1056,6 +1073,30 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Fetches the Japanese romanization dictionary if this platform needs one and does not have
+     * it yet. Called from the settings screen every time a saved selection includes Japanese, so
+     * a FAILED attempt is retried by simply confirming the dialog again; READY and an already
+     * running download make this a no-op. Progress and outcome live in [japaneseDictionaryState],
+     * which the romanization row's subtitle watches.
+     */
+    fun downloadJapaneseDictionaryIfNeeded() {
+        val state = japaneseDictionaryState.value
+        if (state == RomanizationDictionaryState.READY || state == RomanizationDictionaryState.DOWNLOADING) return
+        viewModelScope.launch {
+            lyricsRomanizerRepository.downloadJapaneseDictionary()
+            // The repository settles the state before returning, so reading it back here is the
+            // completion signal — no separate callback needed for the two toasts.
+            when (japaneseDictionaryState.value) {
+                RomanizationDictionaryState.READY ->
+                    makeToast(getString(Res.string.romanization_japanese_dict_ready))
+                RomanizationDictionaryState.FAILED ->
+                    makeToast(getString(Res.string.romanization_japanese_dict_failed))
+                else -> {}
+            }
+        }
+    }
+
     fun getLocation() {
         viewModelScope.launch {
             dataStoreManager.location.collect { location ->
@@ -1169,11 +1210,7 @@ class SettingsViewModel(
     fun getQuality() {
         viewModelScope.launch {
             dataStoreManager.quality.collect { quality ->
-                if (QUALITY.items.any { it.toString() == quality }) {
-                    _quality.emit(quality)
-                } else {
-                    _quality.emit(QUALITY.items[0].toString())
-                }
+                _quality.emit(QUALITY.normalize(quality))
             }
         }
     }
@@ -1608,6 +1645,10 @@ class SettingsViewModel(
                 dataStoreManager.putString("AccountThumbUrl", "")
                 dataStoreManager.setLoggedIn(false)
                 dataStoreManager.setCookie("", null)
+                // Mirroring follows needs a session to write to, so signing out clears the flag
+                // here rather than from the Settings row — same teardown as setSpotifyLogIn and
+                // logOutDiscord. Only this branch: acc != null is switching account, not logout.
+                dataStoreManager.setSyncFollowToYouTube(false)
                 delay(500)
                 getAllGoogleAccount()
                 getLoggedIn()
@@ -1624,6 +1665,7 @@ class SettingsViewModel(
             dataStoreManager.putString("AccountThumbUrl", "")
             dataStoreManager.setLoggedIn(false)
             dataStoreManager.setCookie("", null)
+            dataStoreManager.setSyncFollowToYouTube(false)
             delay(500)
             getAllGoogleAccount()
             getLoggedIn()
@@ -1778,6 +1820,107 @@ class SettingsViewModel(
         }
     }
 
+    private var _delayEnabled: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val delayEnabled: StateFlow<Boolean> = _delayEnabled
+
+    private var _delayTimeMs: MutableStateFlow<Int> = MutableStateFlow(DEFAULT_DELAY_TIME_MS)
+    val delayTimeMs: StateFlow<Int> = _delayTimeMs
+
+    private var _delayFeedback: MutableStateFlow<Float> = MutableStateFlow(DEFAULT_DELAY_FEEDBACK)
+    val delayFeedback: StateFlow<Float> = _delayFeedback
+
+    private var _delayMix: MutableStateFlow<Float> = MutableStateFlow(DEFAULT_DELAY_MIX)
+    val delayMix: StateFlow<Float> = _delayMix
+
+    private var _reverbEnabled: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val reverbEnabled: StateFlow<Boolean> = _reverbEnabled
+
+    private var _reverbPreset: MutableStateFlow<ReverbPreset> = MutableStateFlow(ReverbPreset.HALL)
+    val reverbPreset: StateFlow<ReverbPreset> = _reverbPreset
+
+    private var _reverbMix: MutableStateFlow<Float> = MutableStateFlow(DEFAULT_REVERB_MIX)
+    val reverbMix: StateFlow<Float> = _reverbMix
+
+    /**
+     * Guards the effect collectors the same way [equalizerCollectorsStarted] guards the curve's.
+     *
+     * Same two callers, same trap: [getData] runs on every visit to the settings screen and the two
+     * effect blocks ask on their own so they keep working if they are ever hosted elsewhere. The
+     * collectors live in [viewModelScope] rather than in a composition, so without this every
+     * toggle of the switch would leave another seven behind.
+     */
+    private var audioEffectCollectorsStarted = false
+
+    fun getAudioEffects() {
+        if (audioEffectCollectorsStarted) return
+        audioEffectCollectorsStarted = true
+        viewModelScope.launch {
+            launch { dataStoreManager.delayEnabled.collect { _delayEnabled.emit(it == DataStoreManager.TRUE) } }
+            launch { dataStoreManager.delayTimeMs.collect { _delayTimeMs.emit(it) } }
+            launch { dataStoreManager.delayFeedback.collect { _delayFeedback.emit(it) } }
+            launch { dataStoreManager.delayMix.collect { _delayMix.emit(it) } }
+            launch { dataStoreManager.reverbEnabled.collect { _reverbEnabled.emit(it == DataStoreManager.TRUE) } }
+            launch {
+                dataStoreManager.reverbPreset.collect { stored ->
+                    // The store hands the name back unresolved on purpose, so the fallback lives
+                    // here: a room named by a build newer than this one has to land on something
+                    // playable rather than throw out of a collector and kill the whole block.
+                    _reverbPreset.emit(runCatching { ReverbPreset.valueOf(stored) }.getOrDefault(ReverbPreset.HALL))
+                }
+            }
+            launch { dataStoreManager.reverbMix.collect { _reverbMix.emit(it) } }
+        }
+    }
+
+    fun setDelayEnabled(enabled: Boolean) {
+        viewModelScope.launch { dataStoreManager.setDelayEnabled(enabled) }
+    }
+
+    fun setDelayTimeMs(timeMs: Int) {
+        viewModelScope.launch { dataStoreManager.setDelayTimeMs(timeMs) }
+    }
+
+    fun setDelayFeedback(feedback: Float) {
+        viewModelScope.launch { dataStoreManager.setDelayFeedback(feedback) }
+    }
+
+    fun setDelayMix(mix: Float) {
+        viewModelScope.launch { dataStoreManager.setDelayMix(mix) }
+    }
+
+    fun setReverbEnabled(enabled: Boolean) {
+        viewModelScope.launch { dataStoreManager.setReverbEnabled(enabled) }
+    }
+
+    fun setReverbPreset(preset: ReverbPreset) {
+        viewModelScope.launch { dataStoreManager.setReverbPreset(preset) }
+    }
+
+    fun setReverbMix(mix: Float) {
+        viewModelScope.launch { dataStoreManager.setReverbMix(mix) }
+    }
+
+    /**
+     * Move all three delay values together, in one coroutine.
+     *
+     * Three separate preference keys, so the player does briefly see one of them applied against
+     * the others' old values — the same seam [applyEqualizerPreset] has. Writing them from one
+     * launch at least keeps that window to a single pass instead of three racing ones, and no
+     * ordering of these three is dangerous the way the equalizer's preamp is: an echo caught
+     * mid-change is a wrong echo for a few milliseconds, never a clipped one.
+     */
+    fun applyDelayPreset(
+        timeMs: Int,
+        feedback: Float,
+        mix: Float,
+    ) {
+        viewModelScope.launch {
+            dataStoreManager.setDelayTimeMs(timeMs)
+            dataStoreManager.setDelayFeedback(feedback)
+            dataStoreManager.setDelayMix(mix)
+        }
+    }
+
     private var _syncFollowToYouTube: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val syncFollowToYouTube: StateFlow<Boolean> = _syncFollowToYouTube
 
@@ -1810,6 +1953,9 @@ class SettingsViewModel(
 
     private var _spotifyCanvas: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val spotifyCanvas: StateFlow<Boolean> = _spotifyCanvas
+
+    private var _amAnimatedArtwork: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val amAnimatedArtwork: StateFlow<Boolean> = _amAnimatedArtwork
 
     fun getSpotifyLyrics() {
         viewModelScope.launch {
@@ -1846,6 +1992,21 @@ class SettingsViewModel(
         viewModelScope.launch {
             dataStoreManager.setSpotifyCanvas(loggedIn)
             getSpotifyCanvas()
+        }
+    }
+
+    fun getAMAnimatedArtwork() {
+        viewModelScope.launch {
+            dataStoreManager.amAnimatedArtwork.collect {
+                _amAnimatedArtwork.emit(it == DataStoreManager.TRUE)
+            }
+        }
+    }
+
+    fun setAMAnimatedArtwork(enabled: Boolean) {
+        viewModelScope.launch {
+            dataStoreManager.setAMAnimatedArtwork(enabled)
+            getAMAnimatedArtwork()
         }
     }
 
@@ -1967,3 +2128,20 @@ const val EQUALIZER_BAND_COUNT = 10
 
 /** Band centre labels, for display only — the backend owns the actual frequencies. */
 val EQUALIZER_BAND_LABELS = listOf("31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
+
+// The three delay defaults and the reverb mix repeat what DataStoreManagerImpl falls back to. They
+// exist here so the StateFlows start on the stored default rather than on a placeholder the
+// collector then corrects — otherwise the sliders draw once at 0 and visibly jump the moment the
+// preference file is read, which reads as the app losing the user's settings.
+
+/** Quarter-note-ish spacing at 150 bpm; see `DataStoreManagerImpl.delayTimeMs`. */
+const val DEFAULT_DELAY_TIME_MS = 400
+
+/** See `DataStoreManagerImpl.delayFeedback`. */
+const val DEFAULT_DELAY_FEEDBACK = 0.45f
+
+/** See `DataStoreManagerImpl.delayMix`. */
+const val DEFAULT_DELAY_MIX = 0.3f
+
+/** See `DataStoreManagerImpl.reverbMix`. */
+const val DEFAULT_REVERB_MIX = 0.35f

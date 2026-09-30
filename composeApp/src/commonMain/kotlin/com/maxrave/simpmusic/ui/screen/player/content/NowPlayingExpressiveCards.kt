@@ -90,10 +90,13 @@ import com.maxrave.simpmusic.ui.component.ExplicitBadge
 import com.maxrave.simpmusic.ui.component.HeartCheckBox
 import com.maxrave.simpmusic.ui.component.LyricsView
 import com.maxrave.simpmusic.ui.component.PlayPauseButton
+import com.maxrave.simpmusic.ui.component.lyrics.ShareLyricsSheet
+import com.maxrave.simpmusic.ui.component.lyrics.toShareLyricsLines
 import com.maxrave.simpmusic.ui.component.rememberHolderPainter
 import com.maxrave.simpmusic.ui.icon.Forward5
 import com.maxrave.simpmusic.ui.icon.Fullscreen
 import com.maxrave.simpmusic.ui.icon.Replay5
+import com.maxrave.simpmusic.ui.icon.Share
 import com.maxrave.simpmusic.ui.icon.SimpIcons
 import com.maxrave.simpmusic.ui.icon.Subtitles
 import com.maxrave.simpmusic.ui.icon.SubtitlesOff
@@ -118,6 +121,7 @@ import simpmusic.composeapp.generated.resources.offline_mode
 import simpmusic.composeapp.generated.resources.published_at
 import simpmusic.composeapp.generated.resources.rate_lyrics
 import simpmusic.composeapp.generated.resources.rich_synced
+import simpmusic.composeapp.generated.resources.share_lyrics
 import simpmusic.composeapp.generated.resources.show
 import simpmusic.composeapp.generated.resources.spotify_lyrics_provider
 import simpmusic.composeapp.generated.resources.unsynced
@@ -530,6 +534,7 @@ internal fun ExpressiveBelowTheFold(
     val colorScheme = MaterialTheme.colorScheme
     val localDensity = LocalDensity.current
     val uriHandler = LocalUriHandler.current
+    var showShareLyricsSheet by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.padding(horizontal = 20.dp)) {
         // Lyrics card
         AnimatedVisibility(
@@ -553,19 +558,10 @@ internal fun ExpressiveBelowTheFold(
                             AIBadge()
                         }
                         Spacer(modifier = Modifier.weight(1f))
-                        // Vote button — only when the lyrics or the translation come from SimpMusic.
-                        val canVoteLyrics =
-                            state.screenData.lyricsData?.lyricsProvider == LyricsProvider.SIMPMUSIC &&
-                                state.screenData.lyricsData
-                                    ?.lyrics
-                                    ?.simpMusicLyrics != null
-                        val canVoteTranslatedLyrics =
-                            state.screenData.lyricsData?.translatedLyrics?.second == LyricsProvider.SIMPMUSIC &&
-                                state.screenData.lyricsData
-                                    ?.translatedLyrics
-                                    ?.first
-                                    ?.simpMusicLyrics != null
-                        if (canVoteLyrics || canVoteTranslatedLyrics) {
+                        // Vote button — only when the lyrics or the translation come from SimpMusic
+                        // Lyrics. The rule itself lives on the shared contract (canVote), so a style
+                        // cannot ship without it the way the Apple Music tab did.
+                        if (state.screenData.lyricsData.canVote()) {
                             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
                                 IconButton(
                                     onClick = {
@@ -582,6 +578,19 @@ internal fun ExpressiveBelowTheFold(
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                         }
+                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+                            IconButton(
+                                onClick = { showShareLyricsSheet = true },
+                            ) {
+                                Icon(
+                                    imageVector = SimpIcons.Share,
+                                    contentDescription = stringResource(Res.string.share_lyrics),
+                                    tint = colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                         CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
                             TextButton(
                                 onClick = {
@@ -825,6 +834,20 @@ internal fun ExpressiveBelowTheFold(
                     with(localDensity) { WindowInsets.systemBars.getBottom(localDensity).toDp() },
                 ),
         )
+    }
+
+    state.screenData.lyricsData?.let { lyricsData ->
+        if (showShareLyricsSheet) {
+            ShareLyricsSheet(
+                lines = lyricsData.toShareLyricsLines(),
+                songTitle = state.screenData.nowPlayingTitle,
+                artistName = state.screenData.artistName,
+                artwork = state.screenData.bitmap,
+                seedColor = state.startColor.value,
+                initialLineIndex = state.currentLyricLineIndex,
+                onDismiss = { showShareLyricsSheet = false },
+            )
+        }
     }
 }
 

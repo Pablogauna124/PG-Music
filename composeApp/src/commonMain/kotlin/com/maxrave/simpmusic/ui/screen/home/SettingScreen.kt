@@ -101,6 +101,8 @@ import com.maxrave.common.SUPPORTED_LOCATION
 import com.maxrave.common.SponsorBlockType
 import com.maxrave.common.VIDEO_QUALITY
 import com.maxrave.domain.extension.now
+import com.maxrave.domain.data.model.lyrics.RomanizationDictionaryState
+import com.maxrave.domain.data.model.lyrics.RomanizationLanguage
 import com.maxrave.domain.manager.DataStoreManager
 import com.maxrave.domain.manager.DataStoreManager.Values.TRUE
 import com.maxrave.domain.repository.ImportProgress
@@ -108,6 +110,7 @@ import com.maxrave.domain.utils.LocalResource
 import com.maxrave.logger.Logger
 import com.maxrave.simpmusic.Platform
 import com.maxrave.simpmusic.expect.ui.fileSaverResult
+import com.maxrave.simpmusic.expect.ui.isLyricsBlurSupported
 import com.maxrave.simpmusic.expect.ui.isWallpaperDynamicColorSupported
 import com.maxrave.simpmusic.extension.bytesToMB
 import com.maxrave.simpmusic.extension.displayString
@@ -158,9 +161,6 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -182,6 +182,10 @@ import simpmusic.composeapp.generated.resources.ai_provider
 import simpmusic.composeapp.generated.resources.anonymous
 import simpmusic.composeapp.generated.resources.app_name
 import simpmusic.composeapp.generated.resources.audio
+import simpmusic.composeapp.generated.resources.audio_delay
+import simpmusic.composeapp.generated.resources.audio_delay_description
+import simpmusic.composeapp.generated.resources.audio_reverb
+import simpmusic.composeapp.generated.resources.audio_reverb_description
 import simpmusic.composeapp.generated.resources.author
 import simpmusic.composeapp.generated.resources.auto_backup
 import simpmusic.composeapp.generated.resources.auto_backup_description
@@ -197,6 +201,7 @@ import simpmusic.composeapp.generated.resources.balance_media_loudness
 import simpmusic.composeapp.generated.resources.better_lyrics
 import simpmusic.composeapp.generated.resources.buy_me_a_coffee
 import simpmusic.composeapp.generated.resources.cancel
+import simpmusic.composeapp.generated.resources.animated_artwork_info
 import simpmusic.composeapp.generated.resources.canvas_info
 import simpmusic.composeapp.generated.resources.categories_sponsor_block
 import simpmusic.composeapp.generated.resources.change
@@ -234,6 +239,7 @@ import simpmusic.composeapp.generated.resources.discord_integration
 import simpmusic.composeapp.generated.resources.donation
 import simpmusic.composeapp.generated.resources.download_quality
 import simpmusic.composeapp.generated.resources.downloaded_cache
+import simpmusic.composeapp.generated.resources.enable_animated_artwork
 import simpmusic.composeapp.generated.resources.enable_canvas
 import simpmusic.composeapp.generated.resources.enable_liquid_glass_effect
 import simpmusic.composeapp.generated.resources.enable_liquid_glass_effect_description
@@ -293,6 +299,25 @@ import simpmusic.composeapp.generated.resources.logged_in
 import simpmusic.composeapp.generated.resources.logged_in_as
 import simpmusic.composeapp.generated.resources.lrclib
 import simpmusic.composeapp.generated.resources.lyrics
+import simpmusic.composeapp.generated.resources.lyrics_style
+import simpmusic.composeapp.generated.resources.lyrics_romanization
+import simpmusic.composeapp.generated.resources.lyrics_romanization_description
+import simpmusic.composeapp.generated.resources.romanization_belarusian
+import simpmusic.composeapp.generated.resources.romanization_bulgarian
+import simpmusic.composeapp.generated.resources.romanization_chinese
+import simpmusic.composeapp.generated.resources.romanization_hindi
+import simpmusic.composeapp.generated.resources.romanization_japanese
+import simpmusic.composeapp.generated.resources.romanization_japanese_dict_downloading
+import simpmusic.composeapp.generated.resources.romanization_japanese_dict_failed
+import simpmusic.composeapp.generated.resources.romanization_korean
+import simpmusic.composeapp.generated.resources.romanization_kyrgyz
+import simpmusic.composeapp.generated.resources.romanization_macedonian
+import simpmusic.composeapp.generated.resources.romanization_punjabi
+import simpmusic.composeapp.generated.resources.romanization_russian
+import simpmusic.composeapp.generated.resources.romanization_serbian
+import simpmusic.composeapp.generated.resources.romanization_ukrainian
+import simpmusic.composeapp.generated.resources.lyrics_style_apple_music
+import simpmusic.composeapp.generated.resources.lyrics_style_classic
 import simpmusic.composeapp.generated.resources.main_lyrics_provider
 import simpmusic.composeapp.generated.resources.manage_your_youtube_accounts
 import simpmusic.composeapp.generated.resources.maxrave_dev
@@ -328,6 +353,7 @@ import simpmusic.composeapp.generated.resources.proxy_username_message
 import simpmusic.composeapp.generated.resources.quality
 import simpmusic.composeapp.generated.resources.radio_audio_only
 import simpmusic.composeapp.generated.resources.radio_audio_only_description
+import simpmusic.composeapp.generated.resources.requires_android_12
 import simpmusic.composeapp.generated.resources.restore_your_data
 import simpmusic.composeapp.generated.resources.restore_your_saved_data
 import simpmusic.composeapp.generated.resources.rich_presence_info
@@ -387,6 +413,9 @@ import simpmusic.composeapp.generated.resources.youtube_account
 import simpmusic.composeapp.generated.resources.youtube_subtitle_language
 import simpmusic.composeapp.generated.resources.youtube_subtitle_language_message
 import simpmusic.composeapp.generated.resources.youtube_transcript
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -483,6 +512,7 @@ fun SettingScreen(
     val spotifyLoggedIn by viewModel.spotifyLogIn.collectAsStateWithLifecycle()
     val spotifyLyrics by viewModel.spotifyLyrics.collectAsStateWithLifecycle()
     val spotifyCanvas by viewModel.spotifyCanvas.collectAsStateWithLifecycle()
+    val amAnimatedArtwork by viewModel.amAnimatedArtwork.collectAsStateWithLifecycle()
     val enableSponsorBlock by remember { viewModel.sponsorBlockEnabled.map { it == TRUE } }.collectAsStateWithLifecycle(initialValue = false)
     val skipSegments by viewModel.sponsorBlockCategories.collectAsStateWithLifecycle()
     val playerCache by viewModel.cacheSize.collectAsStateWithLifecycle()
@@ -520,11 +550,16 @@ fun SettingScreen(
     val themeColorSource by sharedViewModel.getThemeColorSource().collectAsStateWithLifecycle(DataStoreManager.THEME_COLOR_DEFAULT)
     val customThemeColorHex by sharedViewModel.getCustomThemeColor().collectAsStateWithLifecycle(DataStoreManager.DEFAULT_THEME_COLOR_HEX)
     val nowPlayingStyle by sharedViewModel.getNowPlayingStyle().collectAsStateWithLifecycle(DataStoreManager.NOW_PLAYING_STYLE_SPOTIFY)
+    val lyricsStyle by sharedViewModel.getLyricsStyle().collectAsStateWithLifecycle(DataStoreManager.LYRICS_STYLE_CLASSIC)
+    val romanizationStored by sharedViewModel.getRomanizationLanguages().collectAsStateWithLifecycle("")
+    val japaneseDictionaryState by viewModel.japaneseDictionaryState.collectAsStateWithLifecycle()
     var showColorPickerDialog by rememberSaveable { mutableStateOf(false) }
     val discordLoggedIn by viewModel.discordLoggedIn.collectAsStateWithLifecycle()
     val loggedIn by viewModel.loggedIn.collectAsStateWithLifecycle()
     val syncFollowToYouTube by viewModel.syncFollowToYouTube.collectAsStateWithLifecycle()
     val equalizerEnabled by viewModel.equalizerEnabled.collectAsStateWithLifecycle()
+    val delayEnabled by viewModel.delayEnabled.collectAsStateWithLifecycle()
+    val reverbEnabled by viewModel.reverbEnabled.collectAsStateWithLifecycle()
     val lastfmLoggedIn by viewModel.lastfmLoggedIn.collectAsStateWithLifecycle()
     val lastfmUsername by viewModel.lastfmUsername.collectAsStateWithLifecycle()
     val lastfmScrobbleEnabled by viewModel.lastfmScrobbleEnabled.collectAsStateWithLifecycle()
@@ -648,11 +683,18 @@ fun SettingScreen(
                         )
                     },
                 )
+                // The Apple Music treatments ARE the blur — the frosted page behind the player, and
+                // the depth of field on the lyrics — and Modifier.blur is a documented no-op below
+                // Android 12, so on an older device they render as a flat, wrong-looking version of
+                // themselves. The requirement is spelled out on the option itself rather than left
+                // for the user to discover after switching.
+                val requiresAndroid12 = " (" + stringResource(Res.string.requires_android_12) + ")"
                 val nowPlayingStyleLabels =
                     listOf(
                         DataStoreManager.NOW_PLAYING_STYLE_SPOTIFY to stringResource(Res.string.now_playing_style_spotify),
                         DataStoreManager.NOW_PLAYING_STYLE_M3_EXPRESSIVE to stringResource(Res.string.now_playing_style_m3_expressive),
-                        DataStoreManager.NOW_PLAYING_STYLE_APPLE_MUSIC to stringResource(Res.string.now_playing_style_apple_music),
+                        DataStoreManager.NOW_PLAYING_STYLE_APPLE_MUSIC to
+                            stringResource(Res.string.now_playing_style_apple_music) + requiresAndroid12,
                     )
                 SettingItem(
                     title = stringResource(Res.string.now_playing_style),
@@ -670,6 +712,119 @@ fun SettingScreen(
                                         val selected = state.selectOne?.getSelected()
                                         nowPlayingStyleLabels.firstOrNull { it.second == selected }?.first?.let {
                                             sharedViewModel.setNowPlayingStyle(it)
+                                        }
+                                    },
+                                dismiss = runBlocking { getString(Res.string.cancel) },
+                            ),
+                        )
+                    },
+                )
+                // Hidden outright below Android 12 rather than offered with one option: the Apple
+                // Music treatment IS the blur, and Modifier.blur is a documented no-op there, so
+                // the choice would be between Classic and a broken-looking Classic.
+                if (isLyricsBlurSupported()) {
+                    val lyricsStyleLabels =
+                        listOf(
+                            DataStoreManager.LYRICS_STYLE_CLASSIC to stringResource(Res.string.lyrics_style_classic),
+                            DataStoreManager.LYRICS_STYLE_APPLE_MUSIC to
+                                stringResource(Res.string.lyrics_style_apple_music) + requiresAndroid12,
+                        )
+                    SettingItem(
+                        title = stringResource(Res.string.lyrics_style),
+                        subtitle = lyricsStyleLabels.firstOrNull { it.first == lyricsStyle }?.second ?: "",
+                        onClick = {
+                            viewModel.setAlertData(
+                                SettingAlertState(
+                                    title = runBlocking { getString(Res.string.lyrics_style) },
+                                    selectOne =
+                                        SettingAlertState.SelectData(
+                                            listSelect = lyricsStyleLabels.map { (it.first == lyricsStyle) to it.second },
+                                        ),
+                                    confirm =
+                                        runBlocking { getString(Res.string.change) } to { state ->
+                                            val selected = state.selectOne?.getSelected()
+                                            lyricsStyleLabels.firstOrNull { it.second == selected }?.first?.let {
+                                                sharedViewModel.setLyricsStyle(it)
+                                            }
+                                        },
+                                    dismiss = runBlocking { getString(Res.string.cancel) },
+                                ),
+                            )
+                        },
+                    )
+                }
+
+                // Independent of BOTH style settings, and not gated on Android 12: this changes
+                // what the words SAY, not how they are drawn, so it applies to every style on
+                // every version. Sits next to them because a user looking for "something about
+                // lyrics" looks in one place.
+                val romanizationLabels =
+                    listOf(
+                        RomanizationLanguage.JAPANESE to stringResource(Res.string.romanization_japanese),
+                        RomanizationLanguage.KOREAN to stringResource(Res.string.romanization_korean),
+                        RomanizationLanguage.CHINESE to stringResource(Res.string.romanization_chinese),
+                        RomanizationLanguage.HINDI to stringResource(Res.string.romanization_hindi),
+                        RomanizationLanguage.PUNJABI to stringResource(Res.string.romanization_punjabi),
+                        RomanizationLanguage.RUSSIAN to stringResource(Res.string.romanization_russian),
+                        RomanizationLanguage.UKRAINIAN to stringResource(Res.string.romanization_ukrainian),
+                        RomanizationLanguage.SERBIAN to stringResource(Res.string.romanization_serbian),
+                        RomanizationLanguage.BULGARIAN to stringResource(Res.string.romanization_bulgarian),
+                        RomanizationLanguage.BELARUSIAN to stringResource(Res.string.romanization_belarusian),
+                        RomanizationLanguage.KYRGYZ to stringResource(Res.string.romanization_kyrgyz),
+                        RomanizationLanguage.MACEDONIAN to stringResource(Res.string.romanization_macedonian),
+                    )
+                val romanizationSelected = RomanizationLanguage.parse(romanizationStored)
+                SettingItem(
+                    title = stringResource(Res.string.lyrics_romanization),
+                    // Two different jobs for one line. Off, the row has to explain what the
+                    // feature IS — nobody guesses "romanization" from the title alone. On, the only
+                    // question worth answering at a glance is which of the twelve are picked, and
+                    // the explanation has served its purpose.
+                    subtitle =
+                        if (romanizationSelected.isEmpty()) {
+                            stringResource(Res.string.lyrics_romanization_description)
+                        } else {
+                            val selectedNames =
+                                romanizationLabels.filter { it.first in romanizationSelected }.joinToString(", ") { it.second }
+                            // Japanese is the one language with a dictionary pack to fetch; while
+                            // that is in flight — or has failed — the row says so, instead of
+                            // listing Japanese as if it were already live.
+                            when {
+                                RomanizationLanguage.JAPANESE !in romanizationSelected -> selectedNames
+                                japaneseDictionaryState == RomanizationDictionaryState.DOWNLOADING ->
+                                    "$selectedNames — ${stringResource(Res.string.romanization_japanese_dict_downloading)}"
+                                japaneseDictionaryState == RomanizationDictionaryState.FAILED ->
+                                    "$selectedNames — ${stringResource(Res.string.romanization_japanese_dict_failed)}"
+                                else -> selectedNames
+                            }
+                        },
+                    onClick = {
+                        viewModel.setAlertData(
+                            SettingAlertState(
+                                title = runBlocking { getString(Res.string.lyrics_romanization) },
+                                // NO `message` here, deliberately. The dialog picks its body with
+                                // an if/else-if chain that tests `message` FIRST, and that branch
+                                // renders only the text and an optional textField — a multipleSelect
+                                // passed alongside it is never reached, so the dialog came up with
+                                // the description and no languages at all.
+                                multipleSelect =
+                                    SettingAlertState.SelectData(
+                                        listSelect =
+                                            romanizationLabels.map { (language, label) ->
+                                                (language in romanizationSelected) to label
+                                            },
+                                    ),
+                                confirm =
+                                    runBlocking { getString(Res.string.save) } to { state ->
+                                        val chosen = state.multipleSelect?.getListSelected().orEmpty()
+                                        val languages =
+                                            romanizationLabels.filter { it.second in chosen }.map { it.first }.toSet()
+                                        sharedViewModel.setRomanizationLanguages(languages)
+                                        // Japanese needs its dictionary pack on disk. A no-op when
+                                        // it is already there (or bundled, as on Desktop) — and the
+                                        // retry after a FAILED attempt is simply confirming again.
+                                        if (RomanizationLanguage.JAPANESE in languages) {
+                                            viewModel.downloadJapaneseDictionaryIfNeeded()
                                         }
                                     },
                                 dismiss = runBlocking { getString(Res.string.cancel) },
@@ -931,11 +1086,10 @@ fun SettingScreen(
                     smallSubtitle = true,
                     switch = (syncFollowToYouTube to { viewModel.setSyncFollowToYouTube(it) }),
                     // Writing to someone's YouTube account needs a session, so the row is dead
-                    // while signed out. onDisable turns the stored flag back off when that
-                    // happens: SettingItem keys its LaunchedEffect on isEnable, so signing out
-                    // mid-session clears it too, not just a cold start in the signed-out state.
+                    // while signed out. Clearing the stored flag is NOT done from here: the reset
+                    // belongs to the logout itself (SettingsViewModel.setUsedAccount /
+                    // logOutAllYouTube), which runs whether or not Settings is ever opened.
                     isEnable = loggedIn == DataStoreManager.TRUE,
-                    onDisable = { viewModel.setSyncFollowToYouTube(false) },
                 )
                 SettingItem(
                     title = stringResource(Res.string.send_back_listening_data_to_google),
@@ -1179,6 +1333,31 @@ fun SettingScreen(
                 // the shape the user built rather than to flat.
                 AnimatedVisibility(visible = equalizerEnabled) {
                     EqualizerSection()
+                }
+                // Beside the equalizer rather than in its own group: all three are the same kind of
+                // thing — one stored setting reshaping the audio on both backends — and a user
+                // hunting for "reverb" looks wherever the sound settings are, not under a heading
+                // they have to guess.
+                SettingItem(
+                    title = stringResource(Res.string.audio_delay),
+                    subtitle = stringResource(Res.string.audio_delay_description),
+                    smallSubtitle = true,
+                    switch = (delayEnabled to { viewModel.setDelayEnabled(it) }),
+                )
+                // Only while on, like the curve — and the three values survive the switch, so
+                // turning it back on returns to the echo the user dialled in.
+                AnimatedVisibility(visible = delayEnabled) {
+                    DelaySection()
+                }
+                SettingItem(
+                    title = stringResource(Res.string.audio_reverb),
+                    subtitle = stringResource(Res.string.audio_reverb_description),
+                    smallSubtitle = true,
+                    switch = (reverbEnabled to { viewModel.setReverbEnabled(it) }),
+                )
+                // Same again: the room and the wet level outlive the switch.
+                AnimatedVisibility(visible = reverbEnabled) {
+                    ReverbSection()
                 }
                 SettingItem(
                     title = stringResource(Res.string.save_playback_state),
@@ -1687,11 +1866,6 @@ fun SettingScreen(
                     subtitle = stringResource(Res.string.use_ai_translation_description),
                     switch = (useAITranslation to { viewModel.setAITranslation(it) }),
                     isEnable = isHasApiKey,
-                    onDisable = {
-                        if (useAITranslation) {
-                            viewModel.setAITranslation(false)
-                        }
-                    },
                 )
             }
         }
@@ -1733,22 +1907,20 @@ fun SettingScreen(
                     subtitle = stringResource(Res.string.spotify_lyrícs_info),
                     switch = (spotifyLyrics to { viewModel.setSpotifyLyrics(it) }),
                     isEnable = spotifyLoggedIn,
-                    onDisable = {
-                        if (spotifyLyrics) {
-                            viewModel.setSpotifyLyrics(false)
-                        }
-                    },
                 )
                 SettingItem(
                     title = stringResource(Res.string.enable_canvas),
                     subtitle = stringResource(Res.string.canvas_info),
                     switch = (spotifyCanvas to { viewModel.setSpotifyCanvas(it) }),
                     isEnable = spotifyLoggedIn,
-                    onDisable = {
-                        if (spotifyCanvas) {
-                            viewModel.setSpotifyCanvas(false)
-                        }
-                    },
+                )
+                // Sits with the canvas because it replaces it, but carries no isEnable: the two
+                // rows above need a Spotify session and this one needs no account at all, so
+                // gating it on spotifyLoggedIn would lock it away from the users it works for.
+                SettingItem(
+                    title = stringResource(Res.string.enable_animated_artwork),
+                    subtitle = stringResource(Res.string.animated_artwork_info),
+                    switch = (amAnimatedArtwork to { viewModel.setAMAnimatedArtwork(it) }),
                 )
             }
         }
@@ -1788,11 +1960,6 @@ fun SettingScreen(
                     subtitle = stringResource(Res.string.rich_presence_info),
                     switch = (richPresenceEnabled to { viewModel.setDiscordRichPresenceEnabled(it) }),
                     isEnable = discordLoggedIn,
-                    onDisable = {
-                        if (discordLoggedIn) {
-                            viewModel.setDiscordRichPresenceEnabled(false)
-                        }
-                    },
                 )
             }
         }
@@ -1835,11 +2002,6 @@ fun SettingScreen(
                         subtitle = stringResource(Res.string.scrobbling_info),
                         switch = (lastfmScrobbleEnabled to { viewModel.setLastfmScrobbleEnabled(it) }),
                         isEnable = lastfmLoggedIn,
-                        onDisable = {
-                            if (lastfmScrobbleEnabled) {
-                                viewModel.setLastfmScrobbleEnabled(false)
-                            }
-                        },
                     )
                 }
             }

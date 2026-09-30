@@ -64,7 +64,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -91,7 +90,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -114,6 +112,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.maxrave.data.io.readLocalImageBytes
 import com.maxrave.domain.data.entities.DownloadState
 import com.maxrave.domain.data.entities.LocalPlaylistEntity
 import com.maxrave.domain.data.entities.SongEntity
@@ -128,13 +127,12 @@ import com.maxrave.domain.utils.FilterState
 import com.maxrave.domain.utils.connectArtists
 import com.maxrave.domain.utils.toListName
 import com.maxrave.logger.Logger
-import com.maxrave.simpmusic.Platform
 import com.maxrave.simpmusic.expect.copyToClipboard
 import com.maxrave.simpmusic.expect.shareUrl
+import com.maxrave.simpmusic.expect.ui.persistPickedImage
 import com.maxrave.simpmusic.expect.ui.photoPickerResult
 import com.maxrave.simpmusic.extension.displayNameRes
 import com.maxrave.simpmusic.extension.greyScale
-import com.maxrave.simpmusic.getPlatform
 import com.maxrave.simpmusic.ui.icon.AccessAlarm
 import com.maxrave.simpmusic.ui.icon.Add
 import com.maxrave.simpmusic.ui.icon.AddCircleOutline
@@ -175,8 +173,6 @@ import com.maxrave.simpmusic.viewModel.NowPlayingBottomSheetViewModel
 import com.maxrave.simpmusic.viewModel.SharedViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -193,13 +189,13 @@ import simpmusic.composeapp.generated.resources.add_to_a_playlist
 import simpmusic.composeapp.generated.resources.add_to_queue
 import simpmusic.composeapp.generated.resources.album
 import simpmusic.composeapp.generated.resources.artists
-import simpmusic.composeapp.generated.resources.baseline_downloaded
 import simpmusic.composeapp.generated.resources.baseline_favorite_24
 import simpmusic.composeapp.generated.resources.better_lyrics
 import simpmusic.composeapp.generated.resources.bitrate
 import simpmusic.composeapp.generated.resources.bpm
 import simpmusic.composeapp.generated.resources.can_not_be_empty
 import simpmusic.composeapp.generated.resources.cancel
+import simpmusic.composeapp.generated.resources.crop_cover
 import simpmusic.composeapp.generated.resources.codec
 import simpmusic.composeapp.generated.resources.copied_to_clipboard
 import simpmusic.composeapp.generated.resources.delete
@@ -217,6 +213,7 @@ import simpmusic.composeapp.generated.resources.edit_thumbnail
 import simpmusic.composeapp.generated.resources.edit_title
 import simpmusic.composeapp.generated.resources.endless_queue
 import simpmusic.composeapp.generated.resources.error_occurred
+import simpmusic.composeapp.generated.resources.extract_source
 import simpmusic.composeapp.generated.resources.itag
 import simpmusic.composeapp.generated.resources.key
 import simpmusic.composeapp.generated.resources.like
@@ -303,10 +300,30 @@ fun InfoPlayerBottomSheet(
     val screenDataState by sharedViewModel.nowPlayingScreenData.collectAsStateWithLifecycle()
     val songEntity by sharedViewModel.nowPlayingState.map { it?.songEntity }.collectAsState(null)
     val format by sharedViewModel.format.collectAsState(null)
+    val extractSource by sharedViewModel.extractSource.collectAsState()
     val downloadProgress by sharedViewModel.downloadFileProgress.collectAsStateWithLifecycle()
 
-    if (downloadProgress != DownloadProgress.INIT) {
-        Box(modifier = Modifier.fillMaxSize()) {
+    ModalBottomSheet(
+        onDismissRequest = {
+            onDismiss()
+        },
+        containerColor = rememberSurfaceDarkColors().container,
+        contentColor = Color.Transparent,
+        dragHandle = {},
+        scrimColor = Color.Black.copy(alpha = .5f),
+        sheetState = sheetState,
+        modifier = Modifier.fillMaxHeight(),
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
+        shape = RectangleShape,
+    ) {
+        // This dialog MUST stay inside the sheet's content lambda. A Dialog is its own window
+        // (Android ComponentDialog) / scene layer (skiko), so nothing in the layout tree orders
+        // it — the layer attached LAST wins, and DisposableEffects attach in composition order.
+        // Written as a sibling BEFORE ModalBottomSheet it lost to the sheet whenever both entered
+        // composition in the same pass: reopening the sheet mid-download, or an Android config
+        // change (downloadProgress lives in the ViewModel, so it survives this composable leaving).
+        // Nested here, the sheet's layer necessarily exists first, so the dialog is always on top.
+        if (downloadProgress != DownloadProgress.INIT) {
             BasicAlertDialog(
                 onDismissRequest = { },
                 modifier = Modifier.wrapContentSize(),
@@ -424,21 +441,7 @@ fun InfoPlayerBottomSheet(
                 }
             }
         }
-    }
 
-    ModalBottomSheet(
-        onDismissRequest = {
-            onDismiss()
-        },
-        containerColor = rememberSurfaceDarkColors().container,
-        contentColor = Color.Transparent,
-        dragHandle = {},
-        scrimColor = Color.Black.copy(alpha = .5f),
-        sheetState = sheetState,
-        modifier = Modifier.fillMaxHeight(),
-        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
-        shape = RectangleShape,
-    ) {
         Card(
             modifier =
                 Modifier
@@ -752,6 +755,32 @@ fun InfoPlayerBottomSheet(
                 )
                 Text(
                     text = format?.keyScale ?: stringResource(Res.string.unknown),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight(align = Alignment.CenterVertically)
+                            .basicMarquee(
+                                iterations = Int.MAX_VALUE,
+                                animationMode = MarqueeAnimationMode.Immediately,
+                            ).focusable()
+                            .padding(horizontal = 10.dp),
+                    style = typo().bodyMedium,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                )
+
+                Text(
+                    text = stringResource(Res.string.extract_source),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                    textAlign = TextAlign.Center,
+                    style = typo().labelMedium,
+                    color = rememberSurfaceDarkColors().content,
+                )
+                Text(
+                    text = extractSource ?: stringResource(Res.string.unknown),
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -1808,10 +1837,15 @@ fun NowPlayingBottomSheet(
                         text =
                             when {
                                 uiState.songUIState.album == null -> Res.string.no_album
-                                uiState.songUIState.album?.name.isNullOrBlank() -> Res.string.album
+                                uiState.songUIState.album
+                                    ?.name
+                                    .isNullOrBlank() -> Res.string.album
                                 else -> null
                             },
-                        textString = uiState.songUIState.album?.name?.takeIf { it.isNotBlank() },
+                        textString =
+                            uiState.songUIState.album
+                                ?.name
+                                ?.takeIf { it.isNotBlank() },
                         enable = uiState.songUIState.album != null,
                     ) {
                         uiState.songUIState.album?.id?.let { id ->
@@ -2652,7 +2686,14 @@ fun AddToPlaylistModalBottomSheet(
                                                 Text(
                                                     text = playlist.title,
                                                     style = typo().labelSmall,
-                                                    color = if (playlist.tracks?.contains(videoId) == true) rememberSurfaceDarkColors().disabled else rememberSurfaceDarkColors().content,
+                                                    color =
+                                                        if (playlist.tracks?.contains(videoId) ==
+                                                            true
+                                                        ) {
+                                                            rememberSurfaceDarkColors().disabled
+                                                        } else {
+                                                            rememberSurfaceDarkColors().content
+                                                        },
                                                 )
                                             }
                                         }
@@ -2927,10 +2968,39 @@ fun LocalPlaylistBottomSheet(
                 onDismiss()
             }
         }
+    // The picked file is cropped before it is used. A cover slot is square, so an uncropped 16:9
+    // photo would be squashed to fit — which is what it used to do.
+    var imageAwaitingCrop by remember { mutableStateOf<ByteArray?>(null) }
     val resultLauncher =
-        photoPickerResult {
-            it?.let { onEditThumbnail(it) }
+        photoPickerResult { pickedUri ->
+            pickedUri?.let { uri ->
+                coroutineScope.launch { imageAwaitingCrop = readLocalImageBytes(uri) }
+            }
         }
+    imageAwaitingCrop?.let { bytes ->
+        ImageCropperDialog(
+            imageBytes = bytes,
+            titleText = stringResource(Res.string.crop_cover),
+            confirmText = stringResource(Res.string.save),
+            cancelText = stringResource(Res.string.cancel),
+            onDismiss = { imageAwaitingCrop = null },
+            onCropped = { cropped ->
+                imageAwaitingCrop = null
+                coroutineScope.launch {
+                    // Written into the app's own storage, NOT reused from the picker's uri: that
+                    // one still points at the original uncropped file, and on Android the read
+                    // permission granted for it does not outlive the process.
+                    // Named after the CONTENT, not the clock. A fixed name would be overwritten
+                    // in place and Coil, which caches by url, would keep showing the previous
+                    // cover; a timestamp would leave a new file behind every time the user
+                    // re-picked the same picture. Hashing gives a fresh name for a new image and
+                    // the same name for the same one.
+                    persistPickedImage(cropped, "cover_${cropped.contentHashCode().toUInt()}.jpg")
+                        ?.let(onEditThumbnail)
+                }
+            },
+        )
+    }
     if (showEditTitle) {
         var newTitle by remember { mutableStateOf(title) }
         val showEditTitleSheetState =

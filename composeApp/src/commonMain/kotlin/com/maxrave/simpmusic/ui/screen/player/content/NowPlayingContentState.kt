@@ -13,9 +13,33 @@ import com.maxrave.domain.data.model.streams.TimeLine
 import com.maxrave.domain.data.player.GenericCastState
 import com.maxrave.domain.mediaservice.handler.ControlState
 import com.maxrave.simpmusic.extension.GradientOffset
+import com.maxrave.simpmusic.viewModel.LyricsProvider
 import com.maxrave.simpmusic.viewModel.NowPlayingScreenData
 import com.maxrave.simpmusic.viewModel.UIEvent
 import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * Whether the lyrics currently on screen can be rated.
+ *
+ * SimpMusic Lyrics is the only provider with a vote endpoint, and the vote is cast against the
+ * SimpMusic record itself — so the provider tag alone is NOT the condition: `simpMusicLyrics`
+ * must actually be there. Either half qualifying is enough, because the dialog rates whichever
+ * of the two came from SimpMusic.
+ *
+ * Lives on the contract the three styles share. The Apple Music style shipped its floating vote
+ * button ungated — offering a rating on YouTube, LRCLIB and Spotify lyrics alike — precisely
+ * because this rule existed only as an expression copy-pasted inside the other two styles, where
+ * a new style had no reason to go looking for it.
+ */
+internal fun NowPlayingScreenData.LyricsData?.canVote(): Boolean {
+    val data = this ?: return false
+    val votableLyrics =
+        data.lyricsProvider == LyricsProvider.SIMPMUSIC && data.lyrics.simpMusicLyrics != null
+    val votableTranslation =
+        data.translatedLyrics?.second == LyricsProvider.SIMPMUSIC &&
+            data.translatedLyrics?.first?.simpMusicLyrics != null
+    return votableLyrics || votableTranslation
+}
 
 // Backdrop behind the player. A dark surface rather than pure black: #000000 reads as a hole
 // next to the artwork-tinted gradient and cards, which is why Spotify sits its player on a
@@ -39,10 +63,13 @@ internal fun String.stripRichSyncTimestamps(): String =
 // itag, which the two YouTube audio families always encode as one of these two codecs. Returns
 // null for anything else so the badge hides instead of showing a guess.
 internal fun String?.toAudioCodecLabel(): String? {
-    val mime = this ?: return null
+    // Fed NewFormatEntity.codecs — "opus", or "mp4a.40.2" for AAC. The regex that fills that
+    // column falls back to the WHOLE mimeType when it fails to match, so both shapes have to be
+    // recognised here; "aac" covers the Piped path, which reports the codec by name.
+    val codec = this ?: return null
     return when {
-        mime.contains("opus", ignoreCase = true) -> "OPUS"
-        mime.contains("mp4a", ignoreCase = true) -> "AAC"
+        codec.contains("opus", ignoreCase = true) -> "OPUS"
+        codec.contains("mp4a", ignoreCase = true) || codec.contains("aac", ignoreCase = true) -> "AAC"
         else -> null
     }
 }

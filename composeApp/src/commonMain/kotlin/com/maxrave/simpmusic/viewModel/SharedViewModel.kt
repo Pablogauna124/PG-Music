@@ -32,6 +32,7 @@ import com.maxrave.domain.extension.isSong
 import com.maxrave.domain.extension.isVideo
 import com.maxrave.domain.extension.toGenericMediaItem
 import com.maxrave.domain.manager.DataStoreManager
+import com.maxrave.domain.data.model.lyrics.RomanizationLanguage
 import com.maxrave.domain.manager.DataStoreManager.Values.FALSE
 import com.maxrave.domain.manager.DataStoreManager.Values.TRUE
 import com.maxrave.domain.mediaservice.handler.ControlState
@@ -111,6 +112,10 @@ import java.io.FileOutputStream
 import kotlin.math.abs
 import kotlin.reflect.KClass
 
+// DataStore key for the kotlin-footguns star prompt. Cleared on every version bump,
+// so the ask comes back after an update - same policy as OPEN_APP_TIME.
+const val FOOTGUNS_STAR_KEY = "footguns_starred"
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedViewModel(
     private val dataStoreManager: DataStoreManager,
@@ -140,10 +145,18 @@ class SharedViewModel(
 
     private var regionCode: String? = null
     private var language: String? = null
-    private var quality: String? = null
 
     private var _format: MutableStateFlow<NewFormatEntity?> = MutableStateFlow(null)
     val format: SharedFlow<NewFormatEntity?> = _format.asSharedFlow()
+
+    /**
+     * Which extractor and cipher decoder produced the current track's URLs, shown in the info sheet.
+     *
+     * Read alongside the format rather than stored with it: the format row is cached and reused,
+     * while this describes the extraction that happened in this run of the app.
+     */
+    private val _extractSource: MutableStateFlow<String?> = MutableStateFlow(null)
+    val extractSource: StateFlow<String?> = _extractSource.asStateFlow()
 
     private var _canvas: MutableStateFlow<CanvasResult?> = MutableStateFlow(null)
     val canvas: StateFlow<CanvasResult?> = _canvas
@@ -206,6 +219,23 @@ class SharedViewModel(
     private var _likeStatus = MutableStateFlow<Boolean>(false)
     val likeStatus: StateFlow<Boolean> = _likeStatus
 
+    /**
+     * Which body of the Apple Music player was open last — held by ENUM NAME so this class stays
+     * ignorant of the UI enum, which is internal to the player package.
+     *
+     * It cannot live in the composable: that player is inside a ModalBottomSheet, so dismissing
+     * the sheet disposes the whole tree and takes any rememberSaveable with it — the tab snapped
+     * back to the artwork every single time it was reopened. This class is a Koin `single`, so it
+     * outlives the sheet while still resetting on app restart, which is the right lifetime for
+     * "where I was a moment ago".
+     */
+    private val _lastPlayerViewTab = MutableStateFlow<String?>(null)
+    val lastPlayerViewTab: StateFlow<String?> = _lastPlayerViewTab
+
+    fun setLastPlayerViewTab(tabName: String) {
+        _lastPlayerViewTab.value = tabName
+    }
+
     val openAppTime: StateFlow<Int> = dataStoreManager.openAppTime.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), 0)
     private val _shareSavedLyrics: MutableStateFlow<Boolean> = MutableStateFlow(true)
     val shareSavedLyrics: StateFlow<Boolean> get() = _shareSavedLyrics
@@ -215,6 +245,7 @@ class SharedViewModel(
             log("SharedViewModel init")
             if (dataStoreManager.appVersion.first() != VersionManager.getVersionName()) {
                 dataStoreManager.resetOpenAppTime()
+                dataStoreManager.putString(FOOTGUNS_STAR_KEY, "false")
                 dataStoreManager.setAppVersion(
                     VersionManager.getVersionName(),
                 )
@@ -305,6 +336,30 @@ class SharedViewModel(
                     Logger.w(tag, "NowPlayingState is $state")
                     canvasJob?.cancel()
                     _nowPlayingState.value = state
+
+                    // Seed the timeline from METADATA as soon as the track is known, instead of
+                    // waiting for the player. SimpleMediaState.Ready carries a duration and only
+                    // fires once the container is parsed; after a queue restore nothing plays, the
+                    // position poll never starts (it runs only while isPlaying), and so nothing
+                    // ever reports a length — which is why a restored queue showed no times at all.
+                    // SongEntity has known the length since the song was first seen.
+                    //
+                    // Written on EVERY track change, not just when missing: leaving the old value
+                    // in place would show the previous track's length over the new one.
+                    // Order matters: metadata first because it is available immediately, then the
+                    // player's own duration, and only -1 ("not known yet") when neither has one.
+                    //
+                    // Writing -1 whenever metadata is missing — which this did at first — makes
+                    // every radio track and every first-time track flash NA:NA on the clock until
+                    // the container is parsed, because those rows have no durationSeconds stored.
+                    // Asking the player before giving up covers exactly that case: on a normal
+                    // track change it usually already knows.
+                    val metadataDurationMs = (state.songEntity?.durationSeconds ?: 0).toLong() * 1000L
+                    val seededTotal =
+                        metadataDurationMs.takeIf { it > 0L }
+                            ?: mediaPlayerHandler.getPlayerDuration().takeIf { it > 0L }
+                            ?: -1L
+                    _timeline.update { it.copy(total = seededTotal) }
                     state.songEntity?.let { track ->
                         _nowPlayingScreenData.value =
                             NowPlayingScreenData(
@@ -385,7 +440,7 @@ class SharedViewModel(
                                     if (_timeline.value.total > 0L) {
                                         _timeline.update {
                                             it.copy(
-                                                total = mediaPlayerHandler.getPlayerDuration(),
+                                                total = mediaPlayerHandler.getPlayerDuration().takeIf { d -> d > 0L } ?: it.total,
                                                 current = mediaState.progress,
                                                 loading = false,
                                             )
@@ -395,7 +450,7 @@ class SharedViewModel(
                                             it.copy(
                                                 current = mediaState.progress,
                                                 loading = true,
-                                                total = mediaPlayerHandler.getPlayerDuration(),
+                                                total = mediaPlayerHandler.getPlayerDuration().takeIf { d -> d > 0L } ?: it.total,
                                             )
                                         }
                                     }
@@ -423,7 +478,13 @@ class SharedViewModel(
                                     it.copy(
                                         current = mediaPlayerHandler.getProgress(),
                                         loading = false,
-                                        total = mediaState.duration,
+                                        // The player's own duration wins, but ONLY when it has one.
+                                        // ExoPlayer answers C.TIME_UNSET (a large negative, not
+                                        // null) until it has parsed the container, and Ready is
+                                        // also published from onIsLoadingChanged — which fires
+                                        // before STATE_READY. Writing that would throw away the
+                                        // metadata duration seeded on the track change above.
+                                        total = mediaState.duration.takeIf { d -> d > 0L } ?: it.total,
                                     )
                                 }
                             }
@@ -526,41 +587,58 @@ class SharedViewModel(
         Logger.w(tag, "Start getCanvas: $videoId $duration")
 //        canvasJob?.cancel()
         viewModelScope.launch {
-            if (dataStoreManager.spotifyCanvas.first() == TRUE) {
-                lyricsCanvasRepository.getCanvas(dataStoreManager, videoId, duration).cancellable().collect { response ->
-                    val data = response.data
-                    when (response) {
-                        is Resource.Success if (data != null && nowPlayingState.value?.mediaItem?.mediaId == videoId) -> {
-                            _canvas.value = data
-                            _nowPlayingScreenData.update {
-                                it.copy(
-                                    canvasData =
-                                        NowPlayingScreenData.CanvasData(
-                                            isVideo = data.isVideo,
-                                            url = data.canvasUrl,
-                                        ),
-                                )
-                            }
-                            // Save canvas video url
-                            if (data.isVideo) lyricsCanvasRepository.updateCanvasUrl(videoId, data.canvasUrl)
-                            // Save canvas thumb url
-                            data.canvasThumbUrl?.let { lyricsCanvasRepository.updateCanvasThumbUrl(videoId, it) }
-                        }
+            // Both sources fill the same slot, so they are tried in order rather than raced:
+            // animated artwork first, and a Spotify canvas only if that found nothing AND the user
+            // has that switch on too. Neither switch touches the other — a track with no animated
+            // artwork still gets its canvas, and turning Spotify off still means no canvas at all.
+            val sources =
+                buildList {
+                    if (dataStoreManager.amAnimatedArtwork.first() == TRUE) {
+                        add(lyricsCanvasRepository.getAMAnimatedArtwork(videoId))
+                    }
+                    if (dataStoreManager.spotifyCanvas.first() == TRUE) {
+                        add(lyricsCanvasRepository.getCanvas(dataStoreManager, videoId, duration))
+                    }
+                }
+            if (sources.isEmpty()) return@launch
 
-                        else -> {
-                            log("Get canvas error: ${response.message}", LogLevel.WARN)
-                            nowPlayingState.value?.songEntity?.canvasUrl?.let { url ->
-                                _nowPlayingScreenData.update {
-                                    it.copy(
-                                        canvasData =
-                                            NowPlayingScreenData.CanvasData(
-                                                isVideo = url.contains(".mp4"),
-                                                url = url,
-                                            ),
-                                    )
-                                }
-                            }
+            var resolved = false
+            for (source in sources) {
+                if (resolved) break
+                source.cancellable().collect { response ->
+                    val data = response.data
+                    if (response is Resource.Success && data != null && nowPlayingState.value?.mediaItem?.mediaId == videoId) {
+                        resolved = true
+                        _canvas.value = data
+                        _nowPlayingScreenData.update {
+                            it.copy(
+                                canvasData =
+                                    NowPlayingScreenData.CanvasData(
+                                        isVideo = data.isVideo,
+                                        url = data.canvasUrl,
+                                    ),
+                            )
                         }
+                        // Save canvas video url
+                        if (data.isVideo) lyricsCanvasRepository.updateCanvasUrl(videoId, data.canvasUrl)
+                        // Save canvas thumb url
+                        data.canvasThumbUrl?.let { lyricsCanvasRepository.updateCanvasThumbUrl(videoId, it) }
+                    } else {
+                        log("Get canvas miss from a source: ${response.message}", LogLevel.WARN)
+                    }
+                }
+            }
+
+            if (!resolved) {
+                nowPlayingState.value?.songEntity?.canvasUrl?.let { url ->
+                    _nowPlayingScreenData.update {
+                        it.copy(
+                            canvasData =
+                                NowPlayingScreenData.CanvasData(
+                                    isVideo = url.isCanvasVideoUrl(),
+                                    url = url,
+                                ),
+                        )
                     }
                 }
             }
@@ -733,7 +811,6 @@ class SharedViewModel(
         type: String,
         index: Int? = null,
     ) {
-        quality = runBlocking { dataStoreManager.quality.first() }
         viewModelScope.launch {
             mediaPlayerHandler.clearMediaItems()
             songRepository.insertSong(track.toSongEntity()).lastOrNull()?.let {
@@ -869,7 +946,6 @@ class SharedViewModel(
 
     fun getLocation() {
         regionCode = runBlocking { dataStoreManager.location.first() }
-        quality = runBlocking { dataStoreManager.quality.first() }
         language = runBlocking { dataStoreManager.getString(SELECTED_LANGUAGE).first() }
     }
 
@@ -929,6 +1005,7 @@ class SharedViewModel(
     private fun getFormat(mediaId: String?) {
         if (mediaId != _format.value?.videoId && !mediaId.isNullOrEmpty()) {
             _format.value = null
+            _extractSource.value = streamRepository.getExtractSource(mediaId)
             getFormatFlowJob?.cancel()
             getFormatFlowJob =
                 viewModelScope.launch {
@@ -939,6 +1016,9 @@ class SharedViewModel(
                         } else {
                             _format.emit(null)
                         }
+                        // Re-read on every emission: the first one usually lands before the
+                        // extractor has finished, so the source is only known on a later pass.
+                        _extractSource.value = streamRepository.getExtractSource(mediaId)
                     }
                 }
         }
@@ -1759,6 +1839,8 @@ class SharedViewModel(
 
     fun getNowPlayingStyle() = dataStoreManager.nowPlayingStyle
 
+    fun getLyricsStyle() = dataStoreManager.lyricsStyle
+
     fun setThemeMode(mode: String) {
         viewModelScope.launch {
             dataStoreManager.setThemeMode(mode)
@@ -1780,6 +1862,23 @@ class SharedViewModel(
     fun setNowPlayingStyle(style: String) {
         viewModelScope.launch {
             dataStoreManager.setNowPlayingStyle(style)
+        }
+    }
+
+    fun setLyricsStyle(style: String) {
+        viewModelScope.launch {
+            dataStoreManager.setLyricsStyle(style)
+        }
+    }
+
+    fun getRomanizationLanguages() = dataStoreManager.romanizationLanguages
+
+    fun setRomanizationLanguages(languages: Set<RomanizationLanguage>) {
+        viewModelScope.launch {
+            // Sorted by name so the stored string is stable: an unsorted Set writes a different
+            // value for the same selection depending on iteration order, which makes the DataStore
+            // flow emit on a change that did not happen.
+            dataStoreManager.setRomanizationLanguages(languages.map { it.name }.sorted().joinToString(","))
         }
     }
 
@@ -2085,3 +2184,14 @@ sealed class VoteState {
         val message: String,
     ) : VoteState()
 }
+
+/**
+ * Whether a stored canvas url points at something a player should open rather than an image.
+ *
+ * The column holds whatever the active source wrote: a Spotify canvas is an `.mp4`, while AM
+ * animated artwork is an HLS `.m3u8` master playlist. Testing only for `.mp4` — as this did before
+ * AM existed — sends every AM artwork down the still-image branch, and because the branch that
+ * reads this is the one that restores a *cached* url, the failure only appears from the second play
+ * of a track onwards.
+ */
+private fun String.isCanvasVideoUrl(): Boolean = contains(".mp4") || contains(".m3u8")

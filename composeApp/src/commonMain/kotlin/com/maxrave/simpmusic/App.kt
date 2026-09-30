@@ -31,9 +31,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,6 +80,7 @@ import com.maxrave.simpmusic.ui.icon.SimpIcons
 import com.maxrave.simpmusic.ui.navigation.destination.home.AnalyticsDestination
 import com.maxrave.simpmusic.ui.navigation.destination.home.HomeDestination
 import com.maxrave.simpmusic.ui.navigation.destination.home.NotificationDestination
+import com.maxrave.simpmusic.ui.navigation.destination.home.WrappedDestination
 import com.maxrave.simpmusic.ui.navigation.destination.library.LibraryDestination
 import com.maxrave.simpmusic.ui.navigation.destination.library.LibraryDynamicPlaylistDestination
 import com.maxrave.simpmusic.ui.navigation.destination.library.MixForYouDestination
@@ -119,6 +124,7 @@ import simpmusic.composeapp.generated.resources.do_not_show_again
 import simpmusic.composeapp.generated.resources.download
 import simpmusic.composeapp.generated.resources.good_night
 import simpmusic.composeapp.generated.resources.notification
+import simpmusic.composeapp.generated.resources.settings
 import simpmusic.composeapp.generated.resources.sleep_timer_off
 import simpmusic.composeapp.generated.resources.this_app_needs_to_access_your_notification
 import simpmusic.composeapp.generated.resources.this_link_is_not_supported
@@ -131,7 +137,12 @@ import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class, ExperimentalFoundationApi::class)
 @Composable
-fun App(viewModel: SharedViewModel = koinInject()) {
+fun App(
+    viewModel: SharedViewModel = koinInject(),
+    showDesktopNotificationPermissionDialog: Boolean = false,
+    onDismissDesktopNotificationPermissionDialog: (doNotShowAgain: Boolean) -> Unit = {},
+    onOpenDesktopNotificationSettings: (doNotShowAgain: Boolean) -> Unit = {},
+) {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass
     val navController = rememberNavController()
     val isDesktopShell = getPlatform() == Platform.Desktop
@@ -162,9 +173,21 @@ fun App(viewModel: SharedViewModel = koinInject()) {
     val themeMode by viewModel.getThemeMode().collectAsStateWithLifecycle(DataStoreManager.THEME_MODE_DARK)
     val themeColorSource by viewModel.getThemeColorSource().collectAsStateWithLifecycle(DataStoreManager.THEME_COLOR_DEFAULT)
     val customThemeColorHex by viewModel.getCustomThemeColor().collectAsStateWithLifecycle(DataStoreManager.DEFAULT_THEME_COLOR_HEX)
-    // MiniPlayer visibility logic
-    var isShowMiniPlayer by rememberSaveable {
-        mutableStateOf(true)
+    // MiniPlayer visibility: derived, never stored.
+    //
+    // This used to be a rememberSaveable Boolean written by a LaunchedEffect. Two things went
+    // wrong with that. The effect only runs AFTER the first composition, so the first frame drew
+    // whatever the initial value said — and rememberSaveable RESTORES a previously saved value,
+    // so flipping that initial value from true to false changed nothing on a process that had
+    // already saved true. The bar therefore showed, hid, and showed again on every start.
+    //
+    // Reading it straight from nowPlayingData removes both failure modes: there is no first-frame
+    // guess to be wrong, and no saved copy to disagree with the source.
+    val isShowMiniPlayer by remember {
+        derivedStateOf {
+            val item = nowPlayingData?.mediaItem
+            item != null && item != GenericMediaItem.EMPTY
+        }
     }
 
     // Now playing screen
@@ -185,10 +208,6 @@ fun App(viewModel: SharedViewModel = koinInject()) {
         rememberHazeState(
             blurEnabled = true,
         )
-
-    LaunchedEffect(nowPlayingData) {
-        isShowMiniPlayer = !(nowPlayingData?.mediaItem == null || nowPlayingData?.mediaItem == GenericMediaItem.EMPTY)
-    }
 
     LaunchedEffect(intent) {
         val intent = intent ?: return@LaunchedEffect
@@ -359,8 +378,11 @@ fun App(viewModel: SharedViewModel = koinInject()) {
         if (navBackStackEntry?.destination?.route?.contains("FullscreenDestination") == true) {
             isShowNowPlaylistScreen = false
         }
+        // Wrapped counts as fullscreen for the same reason the video player does: it is a
+        // full-bleed reel, and the rail and the mini player would sit on top of the card the user
+        // is meant to be reading — and on top of every card captured as a share image.
         isInFullscreen = navBackStackEntry?.destination?.hierarchy?.any {
-            it.hasRoute(FullscreenDestination::class)
+            it.hasRoute(FullscreenDestination::class) || it.hasRoute(WrappedDestination::class)
         } == true
     }
     LaunchedEffect(showAnalyticsTab) {
@@ -716,46 +738,74 @@ fun App(viewModel: SharedViewModel = koinInject()) {
                         onDismissRequest = {
                             viewModel.dismissUpdate()
                         },
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                         title = {
-                            Text(
-                                text = "Nueva versión de PG Music",
-                                style = typo().titleMedium,
-                            )
+                            Column {
+                                Text(
+                                    text = "Actualización de PG Music",
+                                    style = typo().titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                ) {
+                                    Text(
+                                        text = "v${update.version}",
+                                        style = typo().labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    )
+                                }
+                            }
                         },
                         text = {
                             Column {
                                 Text(
-                                    text = "PG Music ${update.version} está disponible.",
+                                    text = "Hay una nueva versión lista para instalar con mejoras y novedades:",
                                     style = typo().bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-
                                 if (update.releaseNotes.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-
+                                    Spacer(modifier = Modifier.height(10.dp))
                                     Column(
-                                        modifier =
-                                            Modifier
-                                                .heightIn(max = 280.dp)
-                                                .verticalScroll(rememberScrollState()),
+                                        modifier = Modifier
+                                            .heightIn(max = 260.dp)
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                                            .padding(12.dp)
+                                            .verticalScroll(rememberScrollState()),
                                     ) {
-                                        Text(
-                                            text = update.releaseNotes,
-                                            style = typo().bodySmall,
+                                        Markdown(
+                                            content = update.releaseNotes,
+                                            typography = markdownTypography(
+                                                bullet = typo().bodySmall,
+                                                paragraph = typo().bodySmall,
+                                                code = typo().bodySmall,
+                                            ),
                                         )
                                     }
                                 }
                             }
                         },
                         confirmButton = {
-                            TextButton(
+                            Button(
                                 onClick = {
                                     openUrl(update.downloadUrl)
                                     viewModel.dismissUpdate()
                                 },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
                             ) {
                                 Text(
-                                    text = "Descargar actualización",
-                                    style = typo().bodySmall,
+                                    text = "Actualizar ahora",
+                                    style = typo().bodySmall.copy(fontWeight = FontWeight.SemiBold),
                                 )
                             }
                         },
@@ -766,32 +816,63 @@ fun App(viewModel: SharedViewModel = koinInject()) {
                                 },
                             ) {
                                 Text(
-                                    text = "Ahora no",
+                                    text = "Más tarde",
                                     style = typo().bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         },
                     )
                 }
 
-                if (showNotificationPermissionDialog) {
+                if (showNotificationPermissionDialog || showDesktopNotificationPermissionDialog) {
                     var doNotShowAgain by remember { mutableStateOf(false) }
+                    val dismissPermissionDialog = {
+                        if (showDesktopNotificationPermissionDialog) {
+                            onDismissDesktopNotificationPermissionDialog(doNotShowAgain)
+                        } else {
+                            viewModel.dismissNotificationPermissionDialog(doNotShowAgain)
+                        }
+                    }
                     AlertDialog(
                         onDismissRequest = {
-                            viewModel.dismissNotificationPermissionDialog(doNotShowAgain)
+                            dismissPermissionDialog()
                         },
                         confirmButton = {
                             TextButton(
                                 onClick = {
-                                    viewModel.dismissNotificationPermissionDialog(doNotShowAgain)
+                                    if (showDesktopNotificationPermissionDialog) {
+                                        onOpenDesktopNotificationSettings(doNotShowAgain)
+                                    } else {
+                                        viewModel.dismissNotificationPermissionDialog(doNotShowAgain)
+                                    }
                                 },
                             ) {
                                 Text(
-                                    stringResource(Res.string.yes),
+                                    stringResource(
+                                        if (showDesktopNotificationPermissionDialog) {
+                                            Res.string.settings
+                                        } else {
+                                            Res.string.yes
+                                        },
+                                    ),
                                     style = typo().bodySmall,
                                 )
                             }
                         },
+                        dismissButton =
+                            if (showDesktopNotificationPermissionDialog) {
+                                {
+                                    TextButton(onClick = dismissPermissionDialog) {
+                                        Text(
+                                            stringResource(Res.string.cancel),
+                                            style = typo().bodySmall,
+                                        )
+                                    }
+                                }
+                            } else {
+                                null
+                            },
                         title = {
                             Text(
                                 stringResource(Res.string.notification),
