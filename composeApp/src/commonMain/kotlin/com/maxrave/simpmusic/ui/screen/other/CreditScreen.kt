@@ -105,16 +105,7 @@ fun CreditScreen(
             fontSize = 13.sp,
         )
 
-        // Developer - clickable, opens dev blog
-        Text(
-            text = stringResource(Res.string.maxrave_dev),
-            style = typo().bodyMedium,
-            textDecoration = TextDecoration.Underline,
-            modifier =
-                Modifier.clickable {
-                    openUrl("https://maxrave.dev")
-                },
-        )
+
 
         Spacer(modifier = Modifier.height(20.dp))
 
